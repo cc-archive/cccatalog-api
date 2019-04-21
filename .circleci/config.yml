@@ -1,0 +1,52 @@
+version: 2.1
+
+executors:
+  cccatalog:
+    docker:
+    - image: python:3.7
+    - image: postgres:10
+
+commands:
+  install_deps:
+    description: "Install the dependencies from Pipenv"
+    parameters:
+      directory:
+        type: string
+        default: "."
+    steps:
+      - run:
+          command: |
+            cd << parameters.directory >>
+            pipenv install --system --deploy --dev
+            cd ..
+
+jobs:
+  lint_api:
+    executor: cccatalog
+    steps:
+    - run: pip install pipenv
+    - checkout
+    - install_deps:
+        directory: "cccatalog-api"
+    - run: pycodestyle cccatalog-api/cccatalog/*.py --exclude='cccatalog-api/cccatalog/api/migrations' --max-line-length=80 --ignore=E402
+
+  lint_ingestion:
+    executor: cccatalog
+    steps:
+    - run: pip install pipenv
+    - checkout
+    - install_deps:
+        directory: "ingestion_server"
+    - run: pycodestyle ingestion_server/*.py --max-line-length=80 --ignore=E402
+
+workflows:
+  version: 2
+
+  ingestion:
+    jobs:
+    - lint_ingestion
+
+  api:
+    jobs:
+    - lint_api
+    
