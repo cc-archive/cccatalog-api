@@ -1,5 +1,5 @@
-from elasticsearch_dsl import Date, Text, Integer, Nested, Keyword, DocType
-import json
+from elasticsearch_dsl import Date, Text, Integer, Nested, Keyword, DocType,\
+    Double
 import logging
 
 """
@@ -65,6 +65,8 @@ class Image(SyncableDocType):
     meta_data = Nested()
     view_count = Integer()
     description = Text(analyzer="english")
+    # A rank_feature field
+    relevance_boost = Double()
 
     class Index:
         name = 'image'

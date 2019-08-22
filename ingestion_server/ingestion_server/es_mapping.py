@@ -126,6 +126,9 @@ def create_mapping(table_name):
                       },
                       "type": "text",
                       "analyzer": "english"
+                   },
+                   "relevance_boost": {
+                      "type": "rank_feature"
                    }
                 }
            }
