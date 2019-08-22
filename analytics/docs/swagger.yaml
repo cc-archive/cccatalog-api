@@ -131,6 +131,7 @@ definitions:
         description: "A unique identifier labeling an anonymous user's session."
       rating:
         type: "integer"
+        description: "An integer ranging from 1-5 inclusive"
         example: 5
       
   CreateResultClickEvent:
