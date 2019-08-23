@@ -303,7 +303,7 @@ class TableIndexer:
             }
         }
         last_doc_es = self.es.search(index=new_index, body=query)
-        return True if last_doc_es['hits']['total'] > 0 else False
+        return True if last_doc_es['hits']['total']['value'] > 0 else False
 
     def _go_live(self, write_index, live_alias):
         """

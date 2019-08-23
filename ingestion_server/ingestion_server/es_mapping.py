@@ -127,7 +127,7 @@ def create_mapping(table_name):
                       "type": "text",
                       "analyzer": "english"
                    },
-                   "relevance_boost": {
+                   "provider_relevance": {
                       "type": "rank_feature"
                    }
                 }

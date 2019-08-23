@@ -2,6 +2,7 @@ from aws_requests_auth.aws_auth import AWSRequestsAuth
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch.exceptions import AuthenticationException, \
     AuthorizationException, NotFoundError
+from elasticsearch_dsl.query import Query
 from elasticsearch_dsl import Q, Search, connections
 from elasticsearch_dsl.response import Response
 from cccatalog import settings
@@ -12,6 +13,10 @@ import logging as log
 
 ELASTICSEARCH_MAX_RESULT_WINDOW = 10000
 CACHE_TIMEOUT = 10
+
+
+class RankFeature(Query):
+    name = 'rank_feature'
 
 
 def _paginate_search(s: Search, page_size: int, page: int):
@@ -114,6 +119,19 @@ def search(search_params, index, page_size, ip, page=1) -> Response:
                 default_field='tags.name',
                 query=tags
             )
+    # Prioritize curated collections over social collections.
+    rank_feature_query = Q(
+        'rank_feature',
+        field='provider_relevance'
+    )
+    s = Search().query(
+        Q(
+            'bool',
+            must=s.query,
+            should=rank_feature_query,
+            minimum_should_match=1
+        )
+    )
 
     # Use highlighting to determine which fields contribute to the selection of
     # top results.
@@ -124,7 +142,7 @@ def search(search_params, index, page_size, ip, page=1) -> Response:
     # pagination inconsistencies and increase cache hits.
     s = s.params(preference=str(ip))
     search_response = s.execute()
-    return search_response
+    return search_response.to_dict()
 
 
 def _validate_provider(input_provider):
