@@ -71,7 +71,7 @@ class Image(SyncableDocType):
     description = Text(analyzer="english")
     # Priority of the content provider for this record. We prioritize curated
     # collections.
-    provider_relevance = RankFeature
+    provider_relevance = RankFeature()
 
     class Index:
         name = 'image'
