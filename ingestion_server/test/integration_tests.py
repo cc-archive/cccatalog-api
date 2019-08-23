@@ -228,7 +228,7 @@ class TestIngestion(unittest.TestCase):
             body=es_query
         )
         msg = 'There should be 1000 documents in Elasticsearch after ingestion.'
-        self.assertEquals(search_response['hits']['total'], 1000, msg)
+        self.assertEquals(search_response['hits']['total']['value'], 1000, msg)
 
     def test04_last_task_in_status_list(self):
         resp = requests.get('http://localhost:60002/task')
@@ -261,7 +261,7 @@ class TestIngestion(unittest.TestCase):
             body=es_query
         )
 
-        num_hits = search_response['hits']['total']
+        num_hits = search_response['hits']['total']['value']
         msg = "id {} should not show up in search results.".format(id_to_check)
         self.assertEqual(0, num_hits, msg)
 
