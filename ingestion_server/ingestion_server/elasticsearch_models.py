@@ -1,7 +1,6 @@
 from elasticsearch_dsl import Date, Text, Integer, Nested, Keyword, DocType,\
-    Double
+    Double, Field
 from ingestion_server.rank import get_provider_relevance
-import logging
 
 """
 Provides an ORM-like experience for accessing data in Elasticsearch.
@@ -9,6 +8,10 @@ Provides an ORM-like experience for accessing data in Elasticsearch.
 Note the actual schema for Elasticsearch is defined in es_mapping.py; any
 low-level changes to the index must be represented there as well.
 """
+
+
+class RankFeature(Field):
+    name = 'rank_feature'
 
 
 class SyncableDocType(DocType):
@@ -66,8 +69,9 @@ class Image(SyncableDocType):
     meta_data = Nested()
     view_count = Integer()
     description = Text(analyzer="english")
-    # Priority of the content provider. We prioritize curated collections.
-    provider_relevance = Double()
+    # Priority of the content provider for this record. We prioritize curated
+    # collections.
+    provider_relevance = RankFeature
 
     class Index:
         name = 'image'
