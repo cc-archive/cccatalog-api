@@ -65,7 +65,7 @@ def _get_page_count(search_results, page_size):
     :param search_results: The Elasticsearch response object containing search
     results.
     """
-    natural_page_count = int(search_results.hits.total / page_size)
+    natural_page_count = int(search_results.hits.total['value'] / page_size)
     last_allowed_page = int((5000 + page_size / 2) / page_size)
     page_count = min(natural_page_count, last_allowed_page)
     return page_count
