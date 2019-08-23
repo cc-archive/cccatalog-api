@@ -265,6 +265,7 @@ class TestIngestion(unittest.TestCase):
         msg = "id {} should not show up in search results.".format(id_to_check)
         self.assertEqual(0, num_hits, msg)
 
+
 if __name__ == '__main__':
     log_level = logging.INFO if ENABLE_DETAILED_LOGS else logging.CRITICAL
     logging.basicConfig(level=log_level)

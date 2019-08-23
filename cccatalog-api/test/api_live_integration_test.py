@@ -48,19 +48,22 @@ def test_search_consistency():
     appear in the first few pages of a search query.
     """
     n_pages = 5
-    searches = set(
-        requests.get(API_URL + '/image/search?q=honey;page={}'.format(page),
+    pages = set(
+        requests.get(API_URL + '/image/search?q=about&page={}'.format(page),
                      verify=False)
-        for page in range(1, n_pages)
+        for page in range(1, n_pages + 1)
     )
 
     images = set()
-    for response in searches:
+    dupe_count = 0
+    for response in pages:
         parsed = json.loads(response.text)
         for result in parsed['results']:
             image_id = result['id']
-            assert image_id not in images
+            if image_id in images:
+                dupe_count += 1
             images.add(image_id)
+    assert dupe_count == 0
 
 
 def test_image_detail(search_fixture):
