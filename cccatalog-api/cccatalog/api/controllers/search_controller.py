@@ -29,7 +29,6 @@ def _paginate_search(s: Search, page_size: int, page: int):
     if start_slice + end_slice > ELASTICSEARCH_MAX_RESULT_WINDOW:
         raise ValueError("Deep pagination is not allowed.")
     s = s[start_slice:end_slice]
-    print('pagination: {},{}'.format(start_slice, end_slice))
     return s
 
 
