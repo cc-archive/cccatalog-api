@@ -92,9 +92,8 @@ def _post_process_results(search_results, request, filter_dead):
             reverse('image-detail', [res['identifier']])
         )
         res['detail'] = url
-        if 'highlight' in res:
-            res['fields_matched'] = list(res['highlight'].keys())
-            res.fields_matched = res['meta']['highlight']
+        if 'highlight' in _res:
+            res['fields_matched'] = list(_res['highlight'].keys())
         to_validate.append(res['url'])
         if PROXY_THUMBS:
             # Proxy thumbnails from providers who don't provide SSL. We also
