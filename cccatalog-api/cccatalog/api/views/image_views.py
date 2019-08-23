@@ -65,7 +65,9 @@ def _get_page_count(search_results, page_size):
     :param search_results: The Elasticsearch response object containing search
     results.
     """
-    natural_page_count = int(search_results.hits.total['value'] / page_size)
+    natural_page_count = int(
+        search_results['hits']['total']['value'] / page_size
+    )
     last_allowed_page = int((5000 + page_size / 2) / page_size)
     page_count = min(natural_page_count, last_allowed_page)
     return page_count
@@ -84,14 +86,16 @@ def _post_process_results(search_results, request, filter_dead):
     """
     results = []
     to_validate = []
-    for res in search_results:
+    for _res in search_results['hits']['hits']:
+        res = _res['_source']
         url = request.build_absolute_uri(
-            reverse('image-detail', [res.identifier])
+            reverse('image-detail', [res['identifier']])
         )
-        res.detail = url
-        if hasattr(res.meta, 'highlight'):
-            res.fields_matched = dir(res.meta.highlight)
-        to_validate.append(res.url)
+        res['detail'] = url
+        if 'highlight' in res:
+            res['fields_matched'] = list(res['highlight'].keys())
+            res.fields_matched = res['meta']['highlight']
+        to_validate.append(res['url'])
         if PROXY_THUMBS:
             # Proxy thumbnails from providers who don't provide SSL. We also
             # have a list of providers that have poor quality or no thumbnails,
@@ -175,7 +179,7 @@ class SearchImages(APIView):
         serialized_results = ImageSerializer(results, many=True).data
         page_count = _get_page_count(search_results, page_size)
 
-        result_count = search_results.hits.total
+        result_count = search_results['hits']['total']['value']
         if len(results) < page_size and page_count == 0:
             result_count = len(results)
         response_data = {
@@ -253,7 +257,7 @@ class BrowseImages(APIView):
         serialized_results = ImageSerializer(results, many=True).data
         page_count = _get_page_count(browse_results, page_size)
         response_data = {
-            'result_count': browse_results.hits.total,
+            'result_count': browse_results['hits']['total']['value'],
             'page_count': page_count,
             RESULTS: serialized_results
         }
@@ -273,7 +277,7 @@ class RelatedImage(APIView):
         filtered = _post_process_results(related, request, True)
         serialized_related = ImageSerializer(filtered, many=True).data
         response_data = {
-            'result_count': related.hits.total,
+            'result_count': related['hits']['total']['value'],
             RESULTS: serialized_related
         }
         serialized_response = RelatedImagesResultsSerializer(data=response_data)
