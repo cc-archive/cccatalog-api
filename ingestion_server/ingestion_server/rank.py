@@ -1,4 +1,3 @@
-import enum
 """
 To improve the relevance of search results, we prefer curated collections (such 
 as those from the MET museum, NYPL, Rjiksmuseum, ...) over social media sites,
@@ -18,7 +17,10 @@ relevance_categories = {
 
 provider_relevance_category = {
     'behance': DEPRIORITIZED,
-    'flickr': DEPRIORITIZED
+    'flickr': DEPRIORITIZED,
+    'svgsilh': DEPRIORITIZED,
+    'deviantart': DEPRIORITIZED,
+    'thingiverse': DEPRIORITIZED
 }
 
 
