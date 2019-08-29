@@ -134,7 +134,8 @@ def search(search_params, index, page_size, ip, page=1) -> Response:
     # Prioritize curated collections over social collections.
     rank_feature_query = Q(
         'rank_feature',
-        field='provider_relevance'
+        field='provider_relevance',
+        boost=100
     )
     s = Search().query(
         Q(
