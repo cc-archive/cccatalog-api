@@ -25,7 +25,7 @@ docker-compose up
 ```
 
 After executing `docker-compose up`, you will be running:
-* A Django API server
+* A Django API server should be present.
 * Two PostgreSQL instances (one simulates the upstream data source, the other serves as the application database)
 * Elasticsearch
 * Redis
