@@ -18,6 +18,7 @@ from django.urls import path, re_path
 from django.conf.urls import include
 from cccatalog.api.views.image_views import SearchImages, ImageDetail,\
     Watermark, BrowseImages, RelatedImage
+from cccatalog.api.views.license_views import ListLicense
 from cccatalog.api.views.site_views import HealthCheck, ImageStats, Register, \
     CheckRates, VerifyEmail
 from cccatalog.api.views.link_views import CreateShortenedLink, \
@@ -112,7 +113,8 @@ urlpatterns = [
         r'^redoc/$',
         schema_view.with_ui('redoc', cache_timeout=15),
         name='schema-redoc'
-    )
+    ),
+    path('license/', ListLicense.as_view())
 ]
 
 if WATERMARK_ENABLED:
