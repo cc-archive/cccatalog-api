@@ -17,8 +17,6 @@ class DeprecationJSONRenderer(JSONRenderer):
         allowed_types = set([dict, ReturnDict])
         if type(data) in allowed_types:
             data['warning'] = deprecation_message
-        else:
-            import logging as log
         response = super(DeprecationJSONRenderer, self).render(
             data, accepted_media_type, renderer_context
         )
