@@ -1,4 +1,5 @@
 from rest_framework.renderers import JSONRenderer
+from rest_framework.utils.serializer_helpers import ReturnDict
 
 
 deprecation_message = '''You are using a legacy version of the CC \
@@ -13,8 +14,11 @@ class DeprecationJSONRenderer(JSONRenderer):
     Adds a deprecation warning to all JSON responses.
     """
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        if type(data) is dict:
+        allowed_types = set([dict, ReturnDict])
+        if type(data) in allowed_types:
             data['warning'] = deprecation_message
+        else:
+            import logging as log
         response = super(DeprecationJSONRenderer, self).render(
             data, accepted_media_type, renderer_context
         )
