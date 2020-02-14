@@ -63,7 +63,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_cron',
-    'oauth2_provider',
+    'oauth2_source',
     'rest_framework',
     'corsheaders',
     'sslserver',
@@ -78,25 +78,25 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'oauth2_provider.middleware.OAuth2TokenMiddleware'
+    'oauth2_source.middleware.OAuth2TokenMiddleware'
 ]
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {}
 }
 
-OAUTH2_PROVIDER = {
+OAUTH2_SOURCE = {
     'SCOPES': {
         'read': 'Read scope',
         'write': 'Write scope',
     }
 }
 
-OAUTH2_PROVIDER_APPLICATION_MODEL = 'api.ThrottledApplication'
+OAUTH2_SOURCE_APPLICATION_MODEL = 'api.ThrottledApplication'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+        'oauth2_source.contrib.rest_framework.OAuth2Authentication',
     ),
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_RENDERER_CLASSES': (
@@ -160,12 +160,12 @@ THUMBNAIL_PROXY_URL = os.environ.get(
     'THUMBNAIL_PROXY_URL', 'https://localhost:8222'
 )
 
-# Some 3rd party content providers provide low quality or broken thumbnails
+# Some 3rd party content sources provide low quality or broken thumbnails
 # frequently. We produce our own thumbnails for the worst offenders.
 PROXY_ALL = os.environ.get('PROXY_ALL', 'iha').split(',')
 
 AUTHENTICATION_BACKENDS = (
-    'oauth2_provider.backends.OAuth2Backend',
+    'oauth2_source.backends.OAuth2Backend',
     'django.contrib.auth.backends.ModelBackend',
 )
 
