@@ -14,7 +14,7 @@ update_tld_names()
 
 """
 Produce an image validation crawl plan. A crawl plan determines which URLs need 
-to be validated and sets appropriate rate limits for each content provider. The
+to be validated and sets appropriate rate limits for each content source. The
 plan can be adjusted by hand if need be. Regardless of the rate limits set by 
 this plan, crawlers will respect robots.txt.
 
@@ -36,7 +36,7 @@ class RateLimitStrategies(Enum):
 RATE_LIMIT_WINDOW = 60
 
 
-# Thresholds for rate limit strategies. For example, a content provider with
+# Thresholds for rate limit strategies. For example, a content source with
 # 9,999 images will receive VERY_LIGHT crawler load, while one with 10,000 will
 # receive LIGHT crawler load.
 RATE_LIMIT_STRATEGY_THRESHOLDS = [
