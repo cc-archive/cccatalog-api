@@ -14,7 +14,7 @@ MODERATE_RPS = 4
 HEAVY_RPS = 5
 # ~1.72MM requests per day
 VERY_HEAVY_RPS = 20
-# ~17.2MM requests per day. Reserved for the largest content providers.
+# ~17.2MM requests per day. Reserved for the largest content sources.
 # MAX_RPS = 200
 
 # Crawl executor settings
