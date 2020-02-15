@@ -21,15 +21,6 @@ def create_mapping(table_name):
                     "view_count": {
                         "type": "long"
                     },
-                    "provider": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
                     "source": {
                         "fields": {
                             "keyword": {
