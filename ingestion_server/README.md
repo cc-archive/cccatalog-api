@@ -66,7 +66,6 @@ class Image(SyncableDocType):
     created_on = Date()
     url = Text(index="not_analyzed")
     thumbnail = Text(index="not_analyzed")
-    provider = Text(index="not_analyzed")
     source = Text(index="not_analyzed")
     license = Text(index="not_analyzed")
     license_version = Text("not_analyzed")
@@ -88,7 +87,6 @@ class Image(SyncableDocType):
             created_on=row[schema['created_on']],
             url=row[schema['url']],
             thumbnail=row[schema['thumbnail']],
-            provider=row[schema['provider']],
             source=row[schema['source']],
             license=row[schema['license']],
             license_version=row[schema['license_version']],
