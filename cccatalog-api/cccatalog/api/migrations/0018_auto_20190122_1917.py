@@ -6,12 +6,12 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0017_remove_contentprovider_updated_on'),
+        ('api', '0017_remove_contentsource_updated_on'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='contentprovider',
+            model_name='contentsource',
             name='notes',
             field=models.TextField(null=True),
         ),
