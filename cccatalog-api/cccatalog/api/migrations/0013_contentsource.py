@@ -11,18 +11,18 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='ContentProvider',
+            name='ContentSource',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_on', models.DateTimeField(auto_now_add=True)),
                 ('updated_on', models.DateTimeField(auto_now=True)),
-                ('provider_identifier', models.CharField(max_length=50)),
-                ('provider_name', models.CharField(max_length=250)),
+                ('source_identifier', models.CharField(max_length=50)),
+                ('source_name', models.CharField(max_length=250)),
                 ('domain_name', models.CharField(max_length=500)),
                 ('filter_content', models.BooleanField(default=False)),
             ],
             options={
-                'db_table': 'content_provider',
+                'db_table': 'content_source',
             },
         ),
     ]
