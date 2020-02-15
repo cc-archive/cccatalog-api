@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RemoveField(
-            model_name='contentprovider',
+            model_name='contentsource',
             name='updated_on',
         ),
     ]
