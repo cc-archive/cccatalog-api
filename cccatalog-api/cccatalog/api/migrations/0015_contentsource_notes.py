@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='contentprovider',
+            model_name='contentsource',
             name='notes',
             field=models.TextField(default=''),
             preserve_default=False,
