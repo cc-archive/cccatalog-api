@@ -6,7 +6,7 @@ from elasticsearch_dsl.response import Response, Hit
 from elasticsearch_dsl.query import Query
 from cccatalog import settings
 from django.core.cache import cache
-from cccatalog.api.models import ContentProvider
+from cccatalog.api.models import ContentSource
 from rest_framework import serializers
 from cccatalog.settings import THUMBNAIL_PROXY_URL, PROXY_THUMBS, PROXY_ALL
 from cccatalog.api.utils.validate_images import validate_images
@@ -23,7 +23,7 @@ DEAD_LINK_RATIO = 1 / 2
 THUMBNAIL = 'thumbnail'
 URL = 'url'
 THUMBNAIL_WIDTH_PX = 600
-PROVIDER = 'provider'
+SOURCE = 'source'
 DEEP_PAGINATION_ERROR = 'Deep pagination is not allowed.'
 QUERY_SPECIAL_CHARACTER_ERROR = 'Unescaped special characters are not allowed.'
 POPULARITY_BOOST = False
@@ -120,15 +120,15 @@ def _post_process_results(s, start, end, page_size, search_results,
             res.fields_matched = dir(res.meta.highlight)
         to_validate.append(res.url)
         if PROXY_THUMBS:
-            # Proxy thumbnails from providers who don't provide SSL. We also
-            # have a list of providers that have poor quality or no thumbnails,
+            # Proxy thumbnails from sources who don't provide SSL. We also
+            # have a list of sources that have poor quality or no thumbnails,
             # so we produce our own on-the-fly.
-            provider = res[PROVIDER]
-            if THUMBNAIL in res and provider not in PROXY_ALL:
+            source = res[SOURCE]
+            if THUMBNAIL in res and source not in PROXY_ALL:
                 to_proxy = THUMBNAIL
             else:
                 to_proxy = URL
-            if 'http://' in res[to_proxy] or provider in PROXY_ALL:
+            if 'http://' in res[to_proxy] or source in PROXY_ALL:
                 original = res[to_proxy]
                 secure = '{proxy_url}/{width}/{original}'.format(
                     proxy_url=THUMBNAIL_PROXY_URL,
@@ -219,7 +219,7 @@ def search(search_params, index, page_size, ip, request,
         ('categories', None),
         ('aspect_ratio', None),
         ('size', None),
-        ('source', 'provider'),
+        ('source', None),
         ('license', 'license__keyword'),
         ('license_type', 'license__keyword')
     ]
@@ -228,19 +228,19 @@ def search(search_params, index, page_size, ip, request,
         s = _apply_filter(s, search_params, api_field, elasticsearch_field)
 
     # Hide data sources from the catalog dynamically.
-    filter_cache_key = 'filtered_providers'
-    filtered_providers = cache.get(key=filter_cache_key)
-    if not filtered_providers:
-        filtered_providers = ContentProvider.objects\
+    filter_cache_key = 'filtered_sources'
+    filtered_sources = cache.get(key=filter_cache_key)
+    if not filtered_sources:
+        filtered_sources = ContentSource.objects\
             .filter(filter_content=True)\
-            .values('provider_identifier')
+            .values('source_identifier')
         cache.set(
             key=filter_cache_key,
             timeout=CACHE_TIMEOUT,
-            value=filtered_providers
+            value=filtered_sources
         )
-    for filtered in filtered_providers:
-        s = s.exclude('match', provider=filtered['provider_identifier'])
+    for filtered in filtered_sources:
+        s = s.exclude('match', source=filtered['source_identifier'])
 
     # Search either by generic multimatch or by "advanced search" with
     # individual field-level queries specified.
@@ -326,14 +326,14 @@ def search(search_params, index, page_size, ip, request,
     return results, page_count, result_count
 
 
-def _validate_provider(input_provider):
-    allowed_providers = list(get_providers('image').keys())
-    lowercase_providers = [x.lower() for x in allowed_providers]
-    if input_provider.lower() not in lowercase_providers:
+def _validate_source(input_source):
+    allowed_sources = list(get_sources('image').keys())
+    lowercase_sources = [x.lower() for x in allowed_sources]
+    if input_source.lower() not in lowercase_sources:
         raise serializers.ValidationError(
-            "Provider \'{}\' does not exist.".format(input_provider)
+            "Source \'{}\' does not exist.".format(input_source)
         )
-    return input_provider.lower()
+    return input_source.lower()
 
 
 def related_images(uuid, index, request, filter_dead):
@@ -383,25 +383,25 @@ def related_images(uuid, index, request, filter_dead):
     return results, result_count
 
 
-def get_providers(index):
+def get_sources(index):
     """
-    Given an index, find all available data providers and return their counts.
+    Given an index, find all available data sources and return their counts.
 
     :param index: An Elasticsearch index, such as `'image'`.
-    :return: A dictionary mapping providers to the count of their images.`
+    :return: A dictionary mapping sources to the count of their images.`
     """
-    provider_cache_name = 'providers-' + index
-    providers = cache.get(key=provider_cache_name)
-    if type(providers) == list:
-        # Invalidate old provider format.
-        cache.delete(key=provider_cache_name)
-    if not providers:
+    source_cache_name = 'sources-' + index
+    sources = cache.get(key=source_cache_name)
+    if type(sources) == list:
+        # Invalidate old source format.
+        cache.delete(key=source_cache_name)
+    if not sources:
         elasticsearch_maxint = 2147483647
         agg_body = {
             'aggs': {
-                'unique_providers': {
+                'unique_sources': {
                     'terms': {
-                        'field': 'provider.keyword',
+                        'field': 'source.keyword',
                                  'size': elasticsearch_maxint,
                         "order": {
                             "_key": "desc"
@@ -413,16 +413,16 @@ def get_providers(index):
         s = Search.from_dict(agg_body)
         s = s.index(index)
         try:
-            results = s.execute().aggregations['unique_providers']['buckets']
+            results = s.execute().aggregations['unique_sources']['buckets']
         except NotFoundError:
             results = [{'key': 'none_found', 'doc_count': 0}]
-        providers = {result['key']: result['doc_count'] for result in results}
+        sources = {result['key']: result['doc_count'] for result in results}
         cache.set(
-            key=provider_cache_name,
+            key=source_cache_name,
             timeout=CACHE_TIMEOUT,
-            value=providers
+            value=sources
         )
-    return providers
+    return sources
 
 
 def _elasticsearch_connect():
