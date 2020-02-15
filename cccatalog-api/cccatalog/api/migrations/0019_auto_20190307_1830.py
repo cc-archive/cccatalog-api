@@ -3,8 +3,8 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-import oauth2_provider.generators
-import oauth2_provider.validators
+import oauth2_soure.generators
+import oauth2_soure.validators
 
 
 class Migration(migrations.Migration):
@@ -28,11 +28,11 @@ class Migration(migrations.Migration):
             name='ThrottledApplication',
             fields=[
                 ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('client_id', models.CharField(db_index=True, default=oauth2_provider.generators.generate_client_id, max_length=100, unique=True)),
-                ('redirect_uris', models.TextField(blank=True, help_text='Allowed URIs list, space separated', validators=[oauth2_provider.validators.validate_uris])),
+                ('client_id', models.CharField(db_index=True, default=oauth2_soure.generators.generate_client_id, max_length=100, unique=True)),
+                ('redirect_uris', models.TextField(blank=True, help_text='Allowed URIs list, space separated', validators=[oauth2_soure.validators.validate_uris])),
                 ('client_type', models.CharField(choices=[('confidential', 'Confidential'), ('public', 'Public')], max_length=32)),
                 ('authorization_grant_type', models.CharField(choices=[('authorization-code', 'Authorization code'), ('implicit', 'Implicit'), ('password', 'Resource owner password-based'), ('client-credentials', 'Client credentials')], max_length=32)),
-                ('client_secret', models.CharField(blank=True, db_index=True, default=oauth2_provider.generators.generate_client_secret, max_length=255)),
+                ('client_secret', models.CharField(blank=True, db_index=True, default=oauth2_soure.generators.generate_client_secret, max_length=255)),
                 ('name', models.CharField(blank=True, max_length=255)),
                 ('skip_authorization', models.BooleanField(default=False)),
                 ('created', models.DateTimeField(auto_now_add=True)),
@@ -61,13 +61,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name='image',
-            name='provider',
-            field=models.CharField(blank=True, db_index=True, help_text='The content provider, e.g. Flickr, 500px...', max_length=80, null=True),
-        ),
-        migrations.AlterField(
-            model_name='image',
             name='source',
-            field=models.CharField(blank=True, db_index=True, help_text='The source of the data, meaning a particular dataset. Source and provider can be different: the Google Open Images dataset is source=openimages., but provider=Flickr.', max_length=80, null=True),
+            field=models.CharField(blank=True, db_index=True, help_text='The source of the data, e.g. Google Open Images dataset, Flickr, 500px...', max_length=80, null=True),
         ),
         migrations.AlterField(
             model_name='image',
