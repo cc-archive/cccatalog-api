@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.safestring import mark_safe
 from django.contrib.postgres.fields import JSONField, ArrayField
 from cccatalog.api.licenses import ATTRIBUTION, get_license_url
-from oauth2_source.models import AbstractApplication
+from oauth2_provider.models import AbstractApplication
 
 
 class OpenLedgerModel(models.Model):
