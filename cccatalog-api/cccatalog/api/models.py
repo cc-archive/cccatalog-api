@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.safestring import mark_safe
 from django.contrib.postgres.fields import JSONField, ArrayField
 from cccatalog.api.licenses import ATTRIBUTION, get_license_url
-from oauth2_provider.models import AbstractApplication
+from oauth2_source.models import AbstractApplication
 
 
 class OpenLedgerModel(models.Model):
@@ -26,21 +26,13 @@ class Image(OpenLedgerModel):
         help_text="Our unique identifier for a CC work."
     )
 
-    provider = models.CharField(
-        max_length=80,
-        blank=True,
-        null=True,
-        db_index=True,
-        help_text="The content provider, e.g. Flickr, 500px...")
-
     source = models.CharField(
         max_length=80,
         blank=True,
         null=True,
         db_index=True,
-        help_text="The source of the data, meaning a particular dataset. Source"
-                  " and provider can be different: the Google Open Images "
-                  "dataset is source=openimages., but provider=Flickr."
+        help_text="The source of the data, e.g. Google Open Images "
+                  "dataset, Flickr, 500px..."
     )
 
     foreign_identifier = models.CharField(
@@ -156,16 +148,16 @@ class DeletedImages(OpenLedgerModel):
     )
 
 
-class ContentProvider(models.Model):
-    provider_identifier = models.CharField(max_length=50)
-    provider_name = models.CharField(max_length=250, unique=True)
+class ContentSource(models.Model):
+    source_identifier = models.CharField(max_length=50)
+    source_name = models.CharField(max_length=250, unique=True)
     created_on = models.DateTimeField(auto_now=False)
     domain_name = models.CharField(max_length=500)
     filter_content = models.BooleanField(null=False, default=False)
     notes = models.TextField(null=True)
 
     class Meta:
-        db_table = 'content_provider'
+        db_table = 'content_source'
 
 
 class ImageTags(OpenLedgerModel):
