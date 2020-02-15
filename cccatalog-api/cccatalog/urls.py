@@ -87,7 +87,7 @@ versioned_paths = [
     ),
     re_path(
         r'auth_tokens/',
-        include('oauth2_source.urls', namespace='oauth2_source')
+        include('oauth2_provider.urls', namespace='oauth2_provider')
     ),
     path(
         'images/<str:identifier>', ImageDetail.as_view(), name='image-detail'
