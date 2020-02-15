@@ -6,12 +6,12 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0015_contentprovider_notes'),
+        ('api', '0015_contentsource_notes'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='contentprovider',
+            model_name='contentsource',
             name='created_on',
             field=models.DateTimeField(),
         ),
