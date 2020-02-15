@@ -1,6 +1,6 @@
 import datetime as dt
 import logging
-from oauth2_provider.models import AccessToken
+from oauth2_source.models import AccessToken
 from cccatalog.api.models import ThrottledApplication
 
 log = logging.getLogger(__name__)
