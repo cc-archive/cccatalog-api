@@ -24,7 +24,6 @@ class Migration(migrations.Migration):
                 ('updated_on', models.DateTimeField(auto_now=True)),
                 ('identifier', models.CharField(blank=True, db_index=True, max_length=255, null=True, unique=True)),
                 ('perceptual_hash', models.CharField(blank=True, db_index=True, max_length=255, null=True)),
-                ('provider', models.CharField(blank=True, db_index=True, max_length=80, null=True)),
                 ('source', models.CharField(blank=True, db_index=True, max_length=80, null=True)),
                 ('foreign_identifier', models.CharField(blank=True, db_index=True, max_length=80, null=True, unique=True)),
                 ('foreign_landing_url', models.CharField(blank=True, max_length=1000, null=True)),
