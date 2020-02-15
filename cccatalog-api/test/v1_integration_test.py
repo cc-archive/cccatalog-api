@@ -133,13 +133,13 @@ def test_stats():
     parsed_response = json.loads(response.text)
     assert response.status_code == 200
     num_images = 0
-    provider_count = 0
+    source_count = 0
     for pair in parsed_response:
         image_count = pair['image_count']
         num_images += int(image_count)
-        provider_count += 1
+        source_count += 1
     assert num_images > 0
-    assert provider_count > 0
+    assert source_count > 0
 
 
 @pytest.mark.skip(reason="Disabled feature")
