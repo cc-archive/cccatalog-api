@@ -6,18 +6,18 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 from rest_framework import serializers
-from cccatalog.api.controllers.search_controller import get_providers
+from cccatalog.api.controllers.search_controller import get_sources
 from cccatalog.api.serializers.oauth2_serializers import\
     OAuth2RegistrationSerializer, OAuth2RegistrationSuccessful, OAuth2KeyInfo
 from drf_yasg.utils import swagger_auto_schema
-from cccatalog.api.models import ContentProvider
+from cccatalog.api.models import ContentSource
 from cccatalog.api.models import ThrottledApplication, OAuth2Verification
 from cccatalog.api.utils.throttle import TenPerDay, OnePerSecond
 from cccatalog.api.utils.oauth2_helper import get_token_info
 from django.core.cache import cache
 
-IDENTIFIER = 'provider_identifier'
-NAME = 'provider_name'
+IDENTIFIER = 'source_identifier'
+NAME = 'source_name'
 FILTER = 'filter_content'
 URL = 'domain_name'
 
@@ -38,15 +38,15 @@ class HealthCheck(APIView):
 
 class AboutImageResponse(serializers.Serializer):
     """ The full image search response. """
-    provider_name = serializers.CharField()
+    source_name = serializers.CharField()
     image_count = serializers.IntegerField()
     display_name = serializers.CharField()
-    provider_url = serializers.CharField()
+    source_url = serializers.CharField()
 
 
 class ImageStats(APIView):
     """
-    List all providers in the Creative Commons image catalog, in addition to the
+    List all sources in the Creative Commons image catalog, in addition to the
     number of images from each data source.
     """
     @swagger_auto_schema(operation_id='image_stats',
@@ -54,30 +54,30 @@ class ImageStats(APIView):
                              200: AboutImageResponse(many=True)
                          })
     def get(self, request, format=None):
-        provider_data = ContentProvider \
+        source_data = ContentSource \
             .objects \
             .values(IDENTIFIER, NAME, FILTER, URL)
-        provider_table = {
+        source_table = {
             rec[IDENTIFIER]:
-                (rec[NAME], rec[FILTER], rec[URL]) for rec in provider_data
+                (rec[NAME], rec[FILTER], rec[URL]) for rec in source_data
         }
-        providers = get_providers('image')
+        sources = get_sources('image')
         response = []
-        for provider in providers:
-            if provider in provider_table:
-                display_name, _filter, provider_url = provider_table[provider]
+        for source in sources:
+            if source in source_table:
+                display_name, _filter, source_url = source_table[source]
                 if not _filter:
                     response.append(
                         {
-                            'provider_name': provider,
-                            'image_count': providers[provider],
+                            'source_name': source,
+                            'image_count': sources[source],
                             'display_name': display_name,
-                            'provider_url': provider_url
+                            'source_url': source_url
                         }
                     )
             else:
-                msg = 'provider_identifier missing from content_provider' \
-                      ' table: {}. Check for typos/omissions.'.format(provider)
+                msg = 'source_identifier missing from content_source' \
+                      ' table: {}. Check for typos/omissions.'.format(source)
                 log.error(msg)
         return Response(status=200, data=response)
 
