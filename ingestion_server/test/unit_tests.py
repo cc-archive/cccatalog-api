@@ -36,7 +36,6 @@ def create_mock_image(override=None):
         'created_on': datetime.datetime.now(),
         'url': 'https://creativecommons.org',
         'thumbnail': 'https://creativecommons.org',
-        'provider': 'test',
         'source': 'test',
         'license': 'cc-by',
         'license_version': '4.0',
