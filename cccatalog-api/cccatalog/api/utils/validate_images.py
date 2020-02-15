@@ -58,7 +58,7 @@ def validate_images(query_hash, start_slice, results, image_urls):
         if status == 200:
             pipe.expire(key, twenty_four_hours_seconds)
         elif status == -1:
-            # Content provider failed to respond; try again in a short interval
+            # Content source failed to respond; try again in a short interval
             pipe.expire(key, thirty_minutes)
         else:
             pipe.expire(key, twenty_four_hours_seconds * 120)
