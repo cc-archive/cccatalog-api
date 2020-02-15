@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from cccatalog.api.models import OAuth2Registration
-from oauth2_source.models import Application
+from oauth2_provider.models import Application
 
 
 class OAuth2RegistrationSerializer(serializers.ModelSerializer):
