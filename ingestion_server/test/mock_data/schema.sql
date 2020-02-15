@@ -28,7 +28,6 @@ CREATE TABLE public.image (
     updated_on timestamp with time zone NOT NULL,
     identifier character varying(255),
     perceptual_hash character varying(255),
-    provider character varying(80),
     source character varying(80),
     foreign_identifier character varying(1000),
     foreign_landing_url character varying(1000),
@@ -151,17 +150,17 @@ CREATE INDEX image_perceptual_hash_0d126a7a_like ON public.image USING btree (pe
 
 
 --
--- Name: image_provider_7d11f847; Type: INDEX; Schema: public; Owner: deploy
+-- Name: image_source_7d11f847; Type: INDEX; Schema: public; Owner: deploy
 --
 
-CREATE INDEX image_provider_7d11f847 ON public.image USING btree (provider);
+CREATE INDEX image_source_7d11f847 ON public.image USING btree (source);
 
 
 --
--- Name: image_provider_7d11f847_like; Type: INDEX; Schema: public; Owner: deploy
+-- Name: image_source_7d11f847_like; Type: INDEX; Schema: public; Owner: deploy
 --
 
-CREATE INDEX image_provider_7d11f847_like ON public.image USING btree (provider varchar_pattern_ops);
+CREATE INDEX image_source_7d11f847_like ON public.image USING btree (source varchar_pattern_ops);
 
 
 --
