@@ -3,7 +3,7 @@ from rest_framework import serializers
 from cccatalog.api.licenses import LICENSE_GROUPS, get_license_url
 from urllib.parse import urlparse
 from collections import namedtuple
-from cccatalog.api.controllers.search_controller import get_providers
+from cccatalog.api.controllers.search_controller import get_sources
 
 
 def _validate_page(value):
@@ -60,8 +60,7 @@ class ImageSearchQueryStringSerializer(serializers.Serializer):
     deprecated_params = [
         DeprecatedParam('li', 'license'),
         DeprecatedParam('lt', 'license_type'),
-        DeprecatedParam('pagesize', 'page_size'),
-        DeprecatedParam('provider', 'source')
+        DeprecatedParam('pagesize', 'page_size')
     ]
 
     q = serializers.CharField(
@@ -120,10 +119,10 @@ class ImageSearchQueryStringSerializer(serializers.Serializer):
         default=True
     )
     source = serializers.CharField(
-        label="provider",
+        label="source",
         help_text="A comma separated list of data sources to search. Valid "
                   "inputs:"
-                  " `{}`".format(list(get_providers('image').keys())),
+                  " `{}`".format(list(get_sources('image').keys())),
         required=False
     )
     extension = serializers.CharField(
@@ -198,15 +197,15 @@ class ImageSearchQueryStringSerializer(serializers.Serializer):
             return 20
 
     @staticmethod
-    def validate_source(input_providers):
-        allowed_providers = list(get_providers('image').keys())
+    def validate_source(input_sources):
+        allowed_sources = list(get_sources('image').keys())
 
-        for input_provider in input_providers.split(','):
-            if input_provider not in allowed_providers:
+        for input_source in input_sources.split(','):
+            if input_source not in allowed_sources:
                 raise serializers.ValidationError(
-                    "Provider \'{}\' does not exist.".format(input_providers)
+                    "Source \'{}\' does not exist.".format(input_sources)
                 )
-        return input_providers.lower()
+        return input_sources.lower()
 
     @staticmethod
     def validate_extension(value):
@@ -281,7 +280,7 @@ class ImageSerializer(serializers.Serializer):
     )
     url = serializers.URLField()
     thumbnail = serializers.URLField(required=False, allow_blank=True)
-    source = serializers.CharField(required=False, source='provider')
+    source = serializers.CharField(required=False, source='source')
     license = serializers.SerializerMethodField()
     license_version = serializers.CharField(required=False)
     license_url = serializers.SerializerMethodField()
