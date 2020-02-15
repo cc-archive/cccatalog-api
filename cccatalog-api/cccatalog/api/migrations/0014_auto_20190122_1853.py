@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0013_contentprovider'),
+        ('api', '0013_contentsource'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='contentprovider',
-            name='provider_name',
+            model_name='contentsource',
+            name='source_name',
             field=models.CharField(max_length=250, unique=True),
         ),
     ]
