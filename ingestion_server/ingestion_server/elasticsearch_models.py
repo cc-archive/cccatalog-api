@@ -70,7 +70,7 @@ class Image(SyncableDocType):
             comments = int(metrics['comments']) + 1
         except (KeyError, TypeError):
             pass
-        provider = row[schema['provider']]
+        source = row[schema['source']]
         extension = Image.get_extension(row[schema['url']])
         height = row[schema['height']]
         width = row[schema['width']]
@@ -85,7 +85,6 @@ class Image(SyncableDocType):
             created_on=row[schema['created_on']],
             url=row[schema['url']],
             thumbnail=row[schema['thumbnail']],
-            provider=row[schema['provider']],
             source=row[schema['source']],
             license=row[schema['license']].lower(),
             license_version=row[schema['license_version']],
@@ -98,7 +97,7 @@ class Image(SyncableDocType):
             views=views,
             comments=comments,
             likes=likes,
-            categories=get_categories(extension, provider),
+            categories=get_categories(extension, source),
             aspect_ratio=Image.get_aspect_ratio(height, width),
             size=Image.get_size(height, width),
             license_url=Image.get_license_url(row[schema['meta_data']])
