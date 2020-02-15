@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('email', models.EmailField(max_length=254)),
                 ('code', models.CharField(db_index=True, max_length=256)),
-                ('associated_application', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.OAUTH2_SOURCE_APPLICATION_MODEL)),
+                ('associated_application', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.OAUTH2_PROVIDER_APPLICATION_MODEL)),
             ],
         ),
     ]
