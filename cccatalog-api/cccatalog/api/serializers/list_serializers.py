@@ -64,5 +64,5 @@ class ImageListUpdateSerializer(ImageListBaseSerializer):
         fields = ('images',)
 
 
-class ListDetailInputErrorSerializer(serializers.Serializer):
+class ImageListDetailInputErrorSerializer(serializers.Serializer):
     slug = serializers.SlugField()
