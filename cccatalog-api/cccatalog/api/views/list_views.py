@@ -1,6 +1,6 @@
 from cccatalog.api.serializers.list_serializers import \
     ImageListCreateSerializer, ImageListResponseSerializer, \
-    ImageListUpdateSerializer
+    ImageListUpdateSerializer, ImageListDetailInputErrorSerializer
 from django.forms.models import model_to_dict
 from cccatalog.api.models import ImageList
 from cccatalog.api.utils.throttle import PostRequestThrottler
@@ -37,7 +37,8 @@ class CreateList(_List):
     @swagger_auto_schema(operation_id="list_create",
                          responses={
                              201: _CreateResponse,
-                             400: "Bad Request"
+                             400: ImageListCreateSerializer,
+                             500: 'Internal Server Error'
                          })
     @throttle_classes([PostRequestThrottler])
     def post(self, request, format=None):
@@ -72,7 +73,9 @@ class ListDetail(_List, RetrieveModelMixin):
     @swagger_auto_schema(operation_id="list_detail",
                          responses={
                              200: ImageListResponseSerializer,
-                             404: 'Not Found'
+                             400: ImageListDetailInputErrorSerializer,
+                             404: 'Not Found',
+                             500: 'Internal Server Error'
                          })
     def get(self, request, slug, format=None):
         """ Get the details of a single list. """
@@ -112,8 +115,10 @@ class ListDetail(_List, RetrieveModelMixin):
                          ],
                          responses={
                              204: '',
+                             400: ImageListDetailInputErrorSerializer,
                              403: 'Forbidden',
-                             404: 'Not Found'
+                             404: 'Not Found',
+                             500: 'Internal Server Error'
                          })
     def delete(self, request, slug, format=None):
         """
@@ -134,9 +139,10 @@ class ListDetail(_List, RetrieveModelMixin):
                          request_body=ImageListUpdateSerializer,
                          responses={
                              204: 'No Content',
-                             400: 'Validation error',
+                             400: ImageListDetailInputErrorSerializer,
                              403: 'Forbidden',
-                             404: 'Not Found'
+                             404: 'Not Found',
+                             500: 'Internal Server Error'
                          })
     def put(self, request, slug, format=None):
         """

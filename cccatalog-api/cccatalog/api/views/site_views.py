@@ -51,7 +51,8 @@ class ImageStats(APIView):
     """
     @swagger_auto_schema(operation_id='image_stats',
                          responses={
-                             200: AboutImageResponse(many=True)
+                             200: AboutImageResponse(many=True),
+                             500: 'Internal Server Error'
                          })
     def get(self, request, format=None):
         provider_data = ContentProvider \
@@ -136,7 +137,9 @@ class Register(APIView):
     @swagger_auto_schema(operation_id='register_api_oauth2',
                          request_body=OAuth2RegistrationSerializer,
                          responses={
-                             201: OAuth2RegistrationSuccessful
+                             201: OAuth2RegistrationSuccessful,
+                             400: OAuth2RegistrationSerializer,
+                             500: 'Internal Server Error'
                          })
     def post(self, request, format=None):
         # Store the registration information the developer gave us.
@@ -236,7 +239,8 @@ class CheckRates(APIView):
     @swagger_auto_schema(operation_id='key_info',
                          responses={
                              200: OAuth2KeyInfo,
-                             403: 'Forbidden'
+                             403: 'Forbidden',
+                             500: 'Internal Server Error'
                          })
     def get(self, request, format=None):
         if not request.auth:

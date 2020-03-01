@@ -22,7 +22,8 @@ class CreateShortenedLink(GenericAPIView):
     @swagger_auto_schema(operation_id="link_create",
                          responses={
                              201: _LinkCreatedResponse,
-                             400: "Bad Request"
+                             400: _LinkCreatedResponse,
+                             500: 'Internal Server Error'
                          })
     @throttle_classes([PostRequestThrottler])
     def post(self, request, format=None):
@@ -59,7 +60,8 @@ class ResolveShortenedLink(APIView):
                          responses={
                              200: None,
                              301: 'Moved Permanently',
-                             404: 'Not Found'
+                             404: 'Not Found',
+                             500: 'Internal Server Error'
                          })
     def get(self, request, path, format=None):
         """

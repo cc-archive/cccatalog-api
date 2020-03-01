@@ -371,3 +371,7 @@ class WatermarkQueryStringSerializer(serializers.Serializer):
                   " text at the bottom.",
         default=True
     )
+
+
+class ImageDetailInputErrorSerializer(serializers.Serializer):
+    identifier = serializers.UUIDField()

@@ -12,7 +12,7 @@ from cccatalog.api.utils.view_count import track_model_views
 from cccatalog.api.serializers.image_serializers import\
     ImageSearchResultsSerializer, ImageSerializer,\
     InputErrorSerializer, ImageSearchQueryStringSerializer,\
-    WatermarkQueryStringSerializer
+    WatermarkQueryStringSerializer, ImageDetailInputErrorSerializer
 from cccatalog.settings import THUMBNAIL_PROXY_URL
 from cccatalog.api.utils.view_count import _get_user_ip
 from cccatalog.api.utils.watermark import watermark
@@ -110,6 +110,7 @@ class RelatedImage(APIView):
     """
     Given a UUID, return images related to the result.
     """
+
     def get(self, request, identifier, format=None):
         related, result_count = search_controller.related_images(
             uuid=identifier,
@@ -143,6 +144,7 @@ class ImageDetail(GenericAPIView, RetrieveModelMixin):
                                                " particular image ID.",
                          responses={
                              200: ImageSerializer,
+                             400: ImageDetailInputErrorSerializer,
                              404: 'Not Found'
                          })
     @track_model_views(Image)
@@ -165,6 +167,7 @@ class ImageDetail(GenericAPIView, RetrieveModelMixin):
                          operation_description="Delete image of given ID.",
                          responses={
                              204: '',
+                             400: ImageDetailInputErrorSerializer,
                              404: 'Not Found'
                          })
     def delete(self, request, identifier, format=None):
