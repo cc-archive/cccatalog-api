@@ -4,7 +4,6 @@ on:
   push:
 
 jobs:
-  jobs:
   build:
 
     runs-on: ubuntu-latest
@@ -52,3 +51,5 @@ jobs:
       env:
         CCCAPI_CONTAINER_NAME: cccatalog-api_web_1
         ANALYTICS_CONTAINER_NAME: cccatalog-api_analytics_1
+        POSTGRES_HOST: postgres
+        POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
