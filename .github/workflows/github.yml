@@ -10,11 +10,12 @@ jobs:
 
     services:
       postgres:
-        image: postgres:10.8
+        image: postgres:10.3-alpine
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_DB: "openledger"
+          POSTGRES_USER: "deploy"
+          POSTGRES_PASSWORD: "deploy"
+          POSTGRES_HOST: "0.0.0.0"
         ports:
         - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -25,6 +26,9 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
+    - name: Install PostgreSQL 10 client
+      run: |
+        sudo apt-get -yqq install libpq-dev
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -34,12 +38,16 @@ jobs:
         cd analytics && pipenv install && cd ..
     - name: Start docker
       run: |
-        sudo service postgresql stop
+        ps aux | grep postgres
+        sudo service postgres stop
         while sudo lsof -Pi :5432 -sTCP:LISTEN -t; do sleep 1; done
         docker-compose up -d
         bash -c 'while [[ "$(curl --insecure -s -o /dev/null -w ''%{http_code}'' http://localhost:8000/healthcheck)" != "200" ]]; do sleep 10 && docker logs cccatalog-api_web_1; done'
         ./load_sample_data.sh
         bash -c 'while [[ "$(curl --insecure -s -o /dev/null -w ''%{http_code}'' http://localhost:8000/v1/images?q=test)" != "200" ]]; do sleep 5; done'
+      env:
+        POSTGRES_HOST: "0.0.0.0"
+        POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
     - name: Run Tests
       run: |
         pycodestyle cccatalog-api/cccatalog --exclude='cccatalog-api/cccatalog/api/migrations' --max-line-length=80 --ignore=E402 
@@ -52,5 +60,5 @@ jobs:
       env:
         CCCAPI_CONTAINER_NAME: cccatalog-api_web_1
         ANALYTICS_CONTAINER_NAME: cccatalog-api_analytics_1
-        POSTGRES_HOST: postgres
+        POSTGRES_HOST: "0.0.0.0"
         POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
