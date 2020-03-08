@@ -27,7 +27,8 @@ jobs:
         python-version: 3.7
     - name: Install dependencies
       run: |
-        pip3 install pipenv
+        python -m pip install --upgrade pip
+        python -m pip install pipenv
         cd cccatalog-api && pipenv install --system --deploy --dev && cd ..
         cd ingestion_server && pipenv install --system --deploy --dev && cd ..
         cd analytics && pipenv install && cd ..
