@@ -52,7 +52,7 @@ services:
   web:
     build: ./cccatalog-api/
     image: cccatalog_api
-    command: python manage.py runserver 0.0.0.0:8000
+    command: bash -c 'python manage.py migrate && python manage.py runserver 0.0.0.0:8000'
     container_name: cccatalog-api_web_1
     volumes:
       - ./cccatalog-api:/cccatalog-api
