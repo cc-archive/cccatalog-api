@@ -61,7 +61,7 @@ class SearchImages(APIView):
                          responses={
                              200: ImageSearchResultsSerializer(many=True),
                              400: InputErrorSerializer,
-                             500: 'Internal Server Error'
+                             500: 'relation "content_provider" does not exist'
                          })
     def get(self, request, format=None):
         # Parse and validate query parameters
@@ -145,9 +145,8 @@ class ImageDetail(GenericAPIView, RetrieveModelMixin):
                                                " particular image ID.",
                          responses={
                              200: ImageSerializer,
-                             400: ImageDetailInputErrorSerializer,
                              404: 'Not Found',
-                             500: 'Internal Server Error'
+                             500: 'relation "image" does not exist'
                          })
     @track_model_views(Image)
     def get(self, request, identifier, format=None, view_count=0):
@@ -170,8 +169,8 @@ class ImageDetail(GenericAPIView, RetrieveModelMixin):
                          responses={
                              204: '',
                              400: ImageDetailInputErrorSerializer,
-                             404: 'Not Found',
-                             500: 'Internal Server Error'
+                             401: 'Authentication credentials were not provided',
+                             404: 'Not Found'
                          })
     def delete(self, request, identifier, format=None):
         try:

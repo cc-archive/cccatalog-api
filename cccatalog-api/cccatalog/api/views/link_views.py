@@ -22,8 +22,8 @@ class CreateShortenedLink(GenericAPIView):
     @swagger_auto_schema(operation_id="link_create",
                          responses={
                              201: _LinkCreatedResponse,
-                             400: _LinkCreatedResponse,
-                             500: 'Internal Server Error'
+                             400: ShortenedLinkSerializer,
+                             500: 'relation "api_shortenedlink" does not exist'
                          })
     @throttle_classes([PostRequestThrottler])
     def post(self, request, format=None):
@@ -60,8 +60,9 @@ class ResolveShortenedLink(APIView):
                          responses={
                              200: None,
                              301: 'Moved Permanently',
+                             400: ShortenedLinkSerializer,
                              404: 'Not Found',
-                             500: 'Internal Server Error'
+                             500: 'relation "api_shortenedlink" does not exist'
                          })
     def get(self, request, path, format=None):
         """

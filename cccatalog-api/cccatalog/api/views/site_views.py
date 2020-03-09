@@ -52,7 +52,8 @@ class ImageStats(APIView):
     @swagger_auto_schema(operation_id='image_stats',
                          responses={
                              200: AboutImageResponse(many=True),
-                             500: 'Internal Server Error'
+                             404: 'Not Found',
+                             500: 'relation "content_provider" does not exist'
                          })
     def get(self, request, format=None):
         provider_data = ContentProvider \
@@ -139,7 +140,7 @@ class Register(APIView):
                          responses={
                              201: OAuth2RegistrationSuccessful,
                              400: OAuth2RegistrationSerializer,
-                             500: 'Internal Server Error'
+                             500: 'relation "api_oauth2registration" does not exist'
                          })
     def post(self, request, format=None):
         # Store the registration information the developer gave us.
