@@ -140,7 +140,8 @@ class Register(APIView):
                          responses={
                              201: OAuth2RegistrationSuccessful,
                              400: OAuth2RegistrationSerializer,
-                             500: 'relation "api_oauth2registration" does not exist'
+                             500: 'relation "api_oauth2registration" \
+                                    does not exist'
                          })
     def post(self, request, format=None):
         # Store the registration information the developer gave us.

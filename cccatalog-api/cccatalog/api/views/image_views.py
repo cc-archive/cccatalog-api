@@ -169,7 +169,8 @@ class ImageDetail(GenericAPIView, RetrieveModelMixin):
                          responses={
                              204: '',
                              400: ImageDetailInputErrorSerializer,
-                             401: 'Authentication credentials were not provided',
+                             401: 'Authentication credentials were \
+                                    not provided',
                              404: 'Not Found'
                          })
     def delete(self, request, identifier, format=None):
