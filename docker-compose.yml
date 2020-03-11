@@ -31,7 +31,7 @@ services:
       test: "pg_isready -U deploy -d openledger"
 
   es:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.1.0
+    image: elasticsearch:7.1.0
     ports:
       - "9200:9200"
     environment:
@@ -147,3 +147,13 @@ services:
       - "8090:8090"
     environment:
       DATABASE_CONN: 'postgres+psycopg2://deploy:deploy@db/analytics'
+
+  nginx:
+    image: nginx:1.17.9
+    volumes:
+      - ./nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf
+    ports:
+      - "8080:8080"
+    depends_on:
+      - web
+      - thumbs
