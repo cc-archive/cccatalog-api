@@ -298,7 +298,6 @@ class Thumbs(APIView):
                              400: 'Bad Request',
                              404: 'Not Found'
                          })
-
     def get(self, request, path, format=None):
         path_element = path.split(".")
         identifier = path_element[0]
@@ -314,8 +313,8 @@ class Thumbs(APIView):
         except Image.DoesNotExist:
             return Response(status=404, data='Not Found')
         proxied = '{proxy_url}/{width}/{original}'.format(
-                proxy_url=THUMBNAIL_PROXY_URL,
-                width=THUMBNAIL_WIDTH_PX,
-                original=image.url
-            )
+            proxy_url=THUMBNAIL_PROXY_URL,
+            width=THUMBNAIL_WIDTH_PX,
+            original=image.url
+        )
         return redirect(proxied)
