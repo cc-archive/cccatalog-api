@@ -357,8 +357,8 @@ class ImageSearchResultsSerializer(serializers.Serializer):
 class InputErrorSerializer(serializers.Serializer):
     """ Returned if invalid query parameters are passed. """
     detail = serializers.CharField()
-    fields = serializers.ListField()
-    error = serializers.CharField()
+    field = serializers.ListField()
+    error_type = serializers.CharField()
 
 
 class WatermarkQueryStringSerializer(serializers.Serializer):
