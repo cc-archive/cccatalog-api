@@ -38,9 +38,10 @@ class Image(OpenLedgerModel):
         blank=True,
         null=True,
         db_index=True,
-        help_text="The source of the data, meaning a particular dataset. Source"
-                  " and provider can be different: the Google Open Images "
-                  "dataset is source=openimages., but provider=Flickr."
+        help_text="The source of the data, meaning a particular dataset."
+                  " Source and provider can be different: the Google "
+                  " Open Images dataset is source=openimages., but "
+                  "provider=Flickr. "
     )
 
     foreign_identifier = models.CharField(
@@ -244,7 +245,8 @@ class Audio(OpenLedgerModel):
         return attribution
 
     def audio_tag(self):
-        return mark_safe('<audio controls><source src="%s" type="audio/mpeg"></audio>' % self.url)
+        return mark_safe('<audio controls><source src="%s" '
+                         'type="audio/mpeg"></audio>' % self.url)
 
     audio_tag.short_description = 'Audio'
 
@@ -332,7 +334,8 @@ class ImageList(OpenLedgerModel):
 
 
 class Tag(OpenLedgerModel):
-    foreign_identifier = models.CharField(max_length=255, blank=True, null=True)
+    foreign_identifier = models.CharField(max_length=255, blank=True,
+                                          null=True)
     name = models.CharField(max_length=1000, blank=True, null=True)
     # Source can be a provider/source (like 'openimages', or 'user')
     source = models.CharField(max_length=255, blank=True, null=True)
