@@ -144,6 +144,127 @@ class Image(OpenLedgerModel):
         ordering = ['-created_on']
 
 
+class Audio(OpenLedgerModel):
+    identifier = models.UUIDField(
+        unique=True,
+        db_index=True,
+        help_text="Our unique identifier for a CC work."
+    )
+
+    provider = models.CharField(
+        max_length=80,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="The content provider, e.g. FreeSound, Internet Archive...")
+
+    foreign_identifier = models.CharField(
+        unique=True,
+        max_length=1000,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="The identifier provided by the upstream source."
+    )
+
+    foreign_landing_url = models.CharField(
+        max_length=1000,
+        blank=True,
+        null=True,
+        help_text="The landing page of the work."
+    )
+
+    url = models.URLField(
+        unique=True,
+        max_length=1000,
+        help_text="The actual URL to the image."
+    )
+
+    filesize = models.IntegerField(blank=True, null=True)
+
+    license = models.CharField(max_length=50)
+
+    license_version = models.CharField(max_length=25, blank=True, null=True)
+
+    creator = models.CharField(max_length=2000, blank=True, null=True)
+
+    creator_url = models.URLField(max_length=2000, blank=True, null=True)
+
+    title = models.CharField(max_length=2000, blank=True, null=True)
+
+    collection = models.CharField(max_length=200, blank=True, null=True)
+
+    genre = models.CharField(max_length=50, blank=True, null=True)
+
+    language = models.CharField(max_length=50, blank=True, null=True)
+
+    duration = models.DurationField(blank=True, null=True)
+
+    tags = JSONField(blank=True, null=True)
+
+    tags_list = ArrayField(
+        models.CharField(max_length=255), blank=True, null=True
+    )
+
+    last_synced_with_source = models.DateTimeField(
+        blank=True,
+        null=True,
+        db_index=True
+    )
+
+    removed_from_source = models.BooleanField(default=False)
+
+    meta_data = JSONField(blank=True, null=True)
+
+    @property
+    def license_url(self):
+        _license = str(self.license)
+        license_version = str(self.license_version)
+        return get_license_url(_license, license_version)
+
+    @property
+    def attribution(self):
+        _license = str(self.license)
+        license_version = str(self.license_version)
+        if self.title:
+            title = '"' + str(self.title) + '"'
+        else:
+            title = 'This work'
+        if self.creator:
+            creator = 'by ' + str(self.creator) + ' '
+        else:
+            creator = ''
+        attribution = ATTRIBUTION.format(
+            title=title,
+            creator=creator,
+            _license=_license.upper(),
+            version=license_version,
+            license_url=str(self.license_url)
+        )
+        return attribution
+
+    def audio_tag(self):
+        return mark_safe('<audio controls><source src="%s" type="audio/mpeg"></audio>' % self.url)
+
+    audio_tag.short_description = 'Audio'
+
+    class Meta:
+        db_table = 'audio'
+        ordering = ['-created_on']
+
+
+class DeletedAudio(OpenLedgerModel):
+    deleted_id = models.UUIDField(
+        unique=True,
+        db_index=True,
+        help_text="The identifier of the deleted audio."
+    )
+    deleting_user = models.CharField(
+        max_length=50,
+        help_text="The user that deleted the audio."
+    )
+
+
 class DeletedImages(OpenLedgerModel):
     deleted_id = models.UUIDField(
         unique=True,
