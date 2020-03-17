@@ -61,7 +61,8 @@ class SearchImages(APIView):
                          responses={
                              200: ImageSearchResultsSerializer(many=True),
                              400: InputErrorSerializer,
-                             500: 'relation "content_provider" does not exist'
+                             500: 'relation "content_provider" does not \
+                                    exist'
                          })
     def get(self, request, format=None):
         # Parse and validate query parameters
