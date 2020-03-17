@@ -1,5 +1,4 @@
 import csv
-import gevent.queue
 import gevent.pool
 import grequests
 import statistics

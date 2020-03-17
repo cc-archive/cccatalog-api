@@ -1,5 +1,3 @@
-import pytest
-import uuid
 import requests
 import os
 """

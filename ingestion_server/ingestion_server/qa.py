@@ -1,4 +1,3 @@
-import uuid
 import random
 from enum import Enum
 from ingestion_server.elasticsearch_models import Image

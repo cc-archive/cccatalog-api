@@ -1,6 +1,5 @@
 import cccatalog.api.licenses as license_helpers
 from rest_framework import serializers
-from cccatalog.api.licenses import LICENSE_GROUPS, get_license_url
 from urllib.parse import urlparse
 from collections import namedtuple
 from cccatalog.api.controllers.search_controller import get_providers

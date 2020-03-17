@@ -1,5 +1,4 @@
 from django.http import HttpResponsePermanentRedirect
-from cccatalog.api.models import ShortenedLink
 from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
 from rest_framework.decorators import throttle_classes

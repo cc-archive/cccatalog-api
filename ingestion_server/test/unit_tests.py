@@ -1,4 +1,3 @@
-import pytest
 import datetime
 from uuid import uuid4
 from psycopg2.extras import Json
