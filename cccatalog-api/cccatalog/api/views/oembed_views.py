@@ -17,13 +17,15 @@ log = logging.getLogger(__name__)
 FORMAT = 'format'
 URL = 'url'
 
+
 class OembedImageDetail(GenericAPIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     @swagger_auto_schema(operation_id="oembed_image_detail",
                          operation_description="Load the details of a"
-                                               " particular image ID through oembed.",
+                         " particular image ID"
+                         " through oembed.",
                          responses={
                              200: OembedImageSerializer,
                              404: 'Not Found'
@@ -41,7 +43,6 @@ class OembedImageDetail(GenericAPIView):
             queryset = None
             return Response(status=404, data='Not found')
 
-
-    def parse_id(self,url):
+    def parse_id(self, url):
         splits = url.split('/')
         return(splits.pop())
