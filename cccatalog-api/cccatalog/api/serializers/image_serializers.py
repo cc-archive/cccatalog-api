@@ -342,6 +342,36 @@ class ImageSerializer(serializers.Serializer):
         return _add_protocol(value)
 
 
+class OembedImageSerializer(serializers.Serializer):
+    """Oembed response for the search"""
+    license_version = serializers.CharField(required=False)
+    type = "photo"
+    width = serializers.IntegerField(
+        required=False,
+        help_text="The width of the image in pixels. Not always available."
+    )
+    height = serializers.IntegerField(
+        required=False,
+        help_text="The height of the image in pixels. Not always available."
+    )
+    title = serializers.CharField(required=False)
+    creator = serializers.CharField(required=False, allow_blank=True)
+    creator_url = serializers.URLField(required=False)
+    license_url = serializers.SerializerMethodField()
+
+    def get_license_url(self, obj):
+        if hasattr(obj, 'meta_data'):
+            return license_helpers.get_license_url(
+                obj.license, obj.license_version, obj.meta_data
+            )
+        elif hasattr(obj, 'license_url') and obj.license_url is not None:
+            return obj.license_url
+        else:
+            return license_helpers.get_license_url(
+                obj.license, obj.license_version, None
+            )
+
+
 class ImageSearchResultsSerializer(serializers.Serializer):
     """ The full image search response. """
     result_count = serializers.IntegerField()

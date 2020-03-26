@@ -23,6 +23,7 @@ from cccatalog.api.views.site_views import HealthCheck, ImageStats, Register, \
     CheckRates, VerifyEmail
 from cccatalog.api.views.link_views import CreateShortenedLink, \
     ResolveShortenedLink
+from cccatalog.api.views.oembed_views import OembedImageDetail
 from cccatalog.settings import API_VERSION, WATERMARK_ENABLED
 from rest_framework import routers
 from drf_yasg.views import get_schema_view
@@ -105,6 +106,9 @@ versioned_paths = [
     ),
     path('link', CreateShortenedLink.as_view(), name='make-link'),
     path('link/<str:path>', ResolveShortenedLink.as_view(), name='resolve'),
+    path(
+        'oembed', OembedImageDetail.as_view(), name='oembed'
+    ),
 ]
 if WATERMARK_ENABLED:
     versioned_paths.append(
