@@ -22,7 +22,7 @@ class CreateShortenedLink(GenericAPIView):
                          responses={
                              201: _LinkCreatedResponse,
                              400: ShortenedLinkSerializer,
-                             500: 'relation "api_shortenedlink" does not exist'
+                             500: 'Internal Server Error'
                          })
     @throttle_classes([PostRequestThrottler])
     def post(self, request, format=None):
@@ -61,7 +61,7 @@ class ResolveShortenedLink(APIView):
                              301: 'Moved Permanently',
                              400: ShortenedLinkSerializer,
                              404: 'Not Found',
-                             500: 'relation "api_shortenedlink" does not exist'
+                             500: 'Internal Server Error'
                          })
     def get(self, request, path, format=None):
         """

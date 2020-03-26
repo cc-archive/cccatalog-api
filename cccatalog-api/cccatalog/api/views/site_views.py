@@ -53,7 +53,7 @@ class ImageStats(APIView):
                          responses={
                              200: AboutImageResponse(many=True),
                              404: 'Not Found',
-                             500: 'relation "content_provider" does not exist'
+                             500: 'Internal Server Error'
                          })
     def get(self, request, format=None):
         provider_data = ContentProvider \
@@ -140,8 +140,7 @@ class Register(APIView):
                          responses={
                              201: OAuth2RegistrationSuccessful,
                              400: OAuth2RegistrationSerializer,
-                             500: 'relation "api_oauth2registration" \
-                                    does not exist'
+                             500: 'Internal Server Error'
                          })
     def post(self, request, format=None):
         # Store the registration information the developer gave us.
