@@ -532,3 +532,12 @@ def test_related_image_search_page_consistency(recommendation, search_without_de
         related = recommendation_factory(image['id'])
         assert related['result_count'] > 0
         assert len(related['results']) == 10
+
+
+def test_oembed_endpoint_json():
+    response = requests.get(
+        API_URL + '/v1/oembed?format=json&url=https%3A//search.creativecommons.org/photos/9be4c069-c7cb-4af0-9403-6e1547212060'
+    )
+    assert response.status_code == 200
+    parsed = response.json()
+    assert parsed['license_url'] == "https://creativecommons.org/licenses/by-nc-nd/4.0/"
