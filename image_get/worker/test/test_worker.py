@@ -194,11 +194,13 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
     for msg in encoded_msgs:
         consumer.insert(msg)
 
+    redis = await aioredis.create_redis_pool()
     aiosession = RateLimitedClientSession(
         AioNetworkSimulatingSession(
             max_requests_per_second=max_rps,
-            fail_if_overloaded=False
-        )
+            fail_if_overloaded=True
+        ),
+        redis=redis
     )
     image_processor = partial(
         process_image, session=aiosession,

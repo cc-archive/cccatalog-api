@@ -2,6 +2,7 @@ import worker.settings as settings
 import logging as log
 import asyncio
 import aiohttp
+import aredis
 import boto3
 import botocore.client
 import time
@@ -69,6 +70,16 @@ async def consume(consumer, image_processor, terminate=False):
             time.sleep(10)
 
 
+async def replenish_tokens(redis):
+    last_replenish = time.monotonic()
+    while True:
+        await redis.set('currtokens:staticflickr.com', 10)
+        now = time.monotonic()
+        log.info(f'Replenished tokens. Last replenish: {now - last_replenish}')
+        last_replenish = now
+        await asyncio.sleep(1)
+
+
 async def setup_consumer():
     """
     Set up all IO used by the consumer.
@@ -85,7 +96,16 @@ async def setup_consumer():
         auto_commit_enable=True,
         zookeeper_connect=settings.ZOOKEEPER_HOST
     )
-    aiosession = RateLimitedClientSession(aiohttp.ClientSession())
+
+    # Todo: clean this up
+    redis_client = aredis.StrictRedis(host=settings.REDIS_HOST)
+    loop = asyncio.get_event_loop()
+    loop.create_task(replenish_tokens(redis_client))
+
+    aiosession = RateLimitedClientSession(
+        aioclient=aiohttp.ClientSession(),
+        redis=redis_client
+    )
     image_processor = partial(
         process_image, session=aiosession,
         persister=partial(save_thumbnail_s3, s3_client=s3)
@@ -101,5 +121,5 @@ async def listen():
     await consumer
 
 if __name__ == '__main__':
-    log.basicConfig(level=log.DEBUG)
+    log.basicConfig(level=log.INFO)
     asyncio.run(listen())

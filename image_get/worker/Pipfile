@@ -11,6 +11,8 @@ Pillow = "*"
 boto3 = "*"
 pytest-asyncio = "*"
 tldextract = "*"
+aioredis = "*"
+aredis = "*"
 
 [dev-packages]
 

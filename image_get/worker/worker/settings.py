@@ -5,9 +5,11 @@ AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_DEFAULT_REGION = os.getenv('AWS_DEFAULT_REGION')
 
-# Kafka
+# Datastores
 KAFKA_HOSTS = os.getenv('KAFKA_HOSTS', 'kafka:9092')
 ZOOKEEPER_HOST = os.getenv('ZOOKEEPER_HOST', 'zookeeper:2181')
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
+
 
 # Generate a thumbnail at each resolution. The key determines the name
 # of the folder that will hold the resulting thumbnail.
