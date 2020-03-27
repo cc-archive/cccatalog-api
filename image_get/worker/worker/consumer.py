@@ -72,14 +72,17 @@ async def consume(consumer, image_processor, terminate=False):
 
 async def replenish_tokens(redis):
     """ """
-    # Todo XXX delete this function
+    # Todo XXX delete this function; we need to automatically learn the rate limit
     last_replenish = time.monotonic()
     while True:
-        await redis.set('currtokens:staticflickr.com', 50)
+        await redis.set('currtokens:staticflickr.com', 10)
+        await redis.set('currtokens:example.gov', 10)
         now = time.monotonic()
-        if now - last_replenish > 1.5:
-            log.warning('Token replenishment took too long.)')
+        took = now - last_replenish
         last_replenish = now
+        if took > 1.5:
+            log.warning(f'Token replenishment took too long: {took}s.')
+            log.warning('This shouldn\'t happen very often.')
         await asyncio.sleep(1)
 
 

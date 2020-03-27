@@ -4,7 +4,7 @@ import asyncio
 import time
 import random
 import logging as log
-from worker.consumer import poll_consumer, consume
+from worker.consumer import poll_consumer, consume, replenish_tokens
 from worker.util import process_image
 from worker.rate_limit import RateLimitedClientSession
 from PIL import Image
@@ -62,6 +62,18 @@ class FakeAioSession:
         return FakeImageResponse(self.corrupt)
 
 
+class FakeRedis:
+    def __init__(self, *args, **kwargs):
+        self.store = {}
+
+    async def set(self, key, val):
+        self.store[key] = val
+
+    async def decr(self, key):
+        self.store[key] -= 1
+        return self.store[key]
+
+
 class AioNetworkSimulatingSession:
     """
     It's a FakeAIOSession, but it can simulate network latency, errors,
@@ -95,8 +107,9 @@ class AioNetworkSimulatingSession:
 
     def update_load(self):
         original_load = self.load
-        utilization =\
-            len(self.requests_last_second) / self.max_requests_per_second
+        rps = len(self.requests_last_second)
+        utilization = rps / self.max_requests_per_second
+        log.debug(f'Current RPS: {rps}')
         if utilization <= 0.8:
             self.load = self.Load.LOW
         elif 0.8 < utilization < 1:
@@ -104,7 +117,8 @@ class AioNetworkSimulatingSession:
         else:
             self.load = self.Load.OVERLOADED
             if self.fail_if_overloaded:
-                assert False, "You DDoS'd the server!"
+                assert False, f"You DDoS'd the server! Utilization: " \
+                              f"{utilization}, reqs/s: {len(self.requests_last_second)}"
         if self.load != original_load:
             log.debug(f'Changed simulator load status to {self.load}')
 
@@ -194,7 +208,12 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
     for msg in encoded_msgs:
         consumer.insert(msg)
 
-    redis = await aioredis.create_redis_pool()
+    redis = FakeRedis()
+
+    # Todo XXX temp
+    loop = asyncio.get_event_loop()
+    loop.create_task(replenish_tokens(redis))
+
     aiosession = RateLimitedClientSession(
         AioNetworkSimulatingSession(
             max_requests_per_second=max_rps,
@@ -210,7 +229,7 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
 
 
 async def mock_listen():
-    consumer = await get_mock_consumer(msg_count=1000, max_rps=10)
+    consumer = await get_mock_consumer(msg_count=500, max_rps=15)
     log.debug('Starting consumer')
     await consumer
 
@@ -220,4 +239,5 @@ async def test_rate_limiting():
     """
     Fails if we crawl aggressively enough to kill the simulated server.
     """
+
     await mock_listen()
