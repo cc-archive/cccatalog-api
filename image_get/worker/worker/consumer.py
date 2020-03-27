@@ -71,11 +71,14 @@ async def consume(consumer, image_processor, terminate=False):
 
 
 async def replenish_tokens(redis):
+    """ """
+    # Todo XXX delete this function
     last_replenish = time.monotonic()
     while True:
-        await redis.set('currtokens:staticflickr.com', 10)
+        await redis.set('currtokens:staticflickr.com', 20)
         now = time.monotonic()
-        log.info(f'Replenished tokens. Last replenish: {now - last_replenish}')
+        if now - last_replenish > 1.5:
+            log.warning('Token replenishment lagging')
         last_replenish = now
         await asyncio.sleep(1)
 
