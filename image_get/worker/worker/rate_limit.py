@@ -1,10 +1,5 @@
 import asyncio
-import aiohttp
-import aredis
 import tldextract
-import random
-import time
-import logging as log
 """
 Every TLD (e.g. flickr.com, metmuseum.org) gets a token bucket. Before a worker
 crawls an image from a domain, it must acquire a token from the right bucket.
