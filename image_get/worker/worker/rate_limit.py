@@ -35,35 +35,21 @@ class RateLimitedClientSession:
         self.client = aioclient
         self.redis = redis
 
-    async def _get_token(self, tld, attempts=0):
+    async def _get_token(self, tld):
         """
         Get a rate limiting token for a URL.
-        :param url: The URL of the item.
+        :param tld: The domain of the item.
         :return: whether a token was successfully obtained
         """
         token_key = f'{PREFIX}{tld.domain}.{tld.suffix}'
-        # Optimistic locking to acquire token
-        try:
-            async with await self.redis.pipeline(transaction=True) as pipe:
-                await pipe.watch(token_key)
-                tokens = int(await pipe.get(token_key))
-                if tokens > 0:
-                    pipe.multi()
-                    await pipe.decr(token_key)
-                    await pipe.execute()
-                    token_acquired = True
-                else:
-                    # Out of tokens
-                    await asyncio.sleep(random.uniform(0.01, 0.5))
-                    token_acquired = False
-            return token_acquired
-        except aredis.WatchError:
-            # There was contention and we have to try again.
-            attempts += 1
-            wait = random.uniform(0.01, 1)
-            log.info(f'Contention! Waiting {wait}. Attempt {attempts}')
-            await asyncio.sleep(wait)
-            return await self._get_token(tld, attempts)
+        tokens = int(await self.redis.decr(token_key))
+        if tokens >= 0:
+            token_acquired = True
+        else:
+            # Out of tokens
+            await asyncio.sleep(random.uniform(0.01, 0.5))
+            token_acquired = False
+        return token_acquired
 
     async def get(self, url):
         tld = tldextract.extract(url)
