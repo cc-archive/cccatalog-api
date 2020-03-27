@@ -47,7 +47,7 @@ class RateLimitedClientSession:
             token_acquired = True
         else:
             # Out of tokens
-            await asyncio.sleep(random.uniform(0.01, 0.5))
+            await asyncio.sleep(1)
             token_acquired = False
         return token_acquired
 
