@@ -10,6 +10,7 @@ from cccatalog.api.serializers.image_serializers import\
 from cccatalog.settings import THUMBNAIL_PROXY_URL
 import cccatalog.api.controllers.search_controller as search_controller
 from cccatalog.api.utils.exceptions import input_error_response
+import PIL, requests, io
 import logging
 
 log = logging.getLogger(__name__)
@@ -38,7 +39,23 @@ class OembedImageDetail(GenericAPIView):
         try:
             queryset = Image.objects.get(identifier=identifier)
             serialized_image = OembedImageSerializer(queryset).data
-            return Response(status=200, data=serialized_image)
+            if queryset.width is not None and queryset.height is not None:
+                return Response(status=200, data=serialized_image)
+            else:
+                image_content = requests.get(queryset.url)
+                image = PIL.Image.open(io.BytesIO(image_content.content))
+                width, height = image.size
+                oembed_image = Image(
+                    license_version=queryset.license_version,
+                    width=width,
+                    height=height,
+                    title=queryset.title,
+                    creator=queryset.creator,
+                    creator_url=queryset.creator_url,
+                    license=queryset.license
+                )
+                serialized_image = OembedImageSerializer(oembed_image).data
+                return Response(status=200, data=serialized_image)
         except Image.DoesNotExist:
             queryset = None
             return Response(status=404, data='Not found')
