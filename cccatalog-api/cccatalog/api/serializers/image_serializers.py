@@ -355,7 +355,11 @@ class OembedImageSerializer(serializers.Serializer):
         help_text="The height of the image in pixels. Not always available."
     )
     title = serializers.CharField(required=False)
-    author_name = serializers.CharField(required=False, allow_blank=True, source='creator')
+    author_name = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        source='creator'
+    )
     author_url = serializers.URLField(required=False, source='creator_url')
     license_url = serializers.SerializerMethodField()
 
