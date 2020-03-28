@@ -344,7 +344,7 @@ class ImageSerializer(serializers.Serializer):
 
 class OembedImageSerializer(serializers.Serializer):
     """Oembed response for the search"""
-    license_version = serializers.CharField(required=False)
+    version = serializers.CharField(required=False, source='license_version')
     type = "photo"
     width = serializers.IntegerField(
         required=False,
@@ -355,8 +355,12 @@ class OembedImageSerializer(serializers.Serializer):
         help_text="The height of the image in pixels. Not always available."
     )
     title = serializers.CharField(required=False)
-    creator = serializers.CharField(required=False, allow_blank=True)
-    creator_url = serializers.URLField(required=False)
+    author_name = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        source='creator'
+    )
+    author_url = serializers.URLField(required=False, source='creator_url')
     license_url = serializers.SerializerMethodField()
 
     def get_license_url(self, obj):
