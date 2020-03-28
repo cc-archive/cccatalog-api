@@ -10,7 +10,9 @@ from cccatalog.api.serializers.image_serializers import\
 from cccatalog.settings import THUMBNAIL_PROXY_URL
 import cccatalog.api.controllers.search_controller as search_controller
 from cccatalog.api.utils.exceptions import input_error_response
-import PIL, requests, io
+import PIL
+import requests
+import io
 import logging
 
 log = logging.getLogger(__name__)
