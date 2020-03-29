@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'django_cron',
     'oauth2_provider',
     'rest_framework',
+    'rest_framework_xml',
     'corsheaders',
     'sslserver',
 ]
@@ -100,6 +101,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework_xml.renderers.XMLRenderer',
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),

@@ -535,9 +535,18 @@ def test_related_image_search_page_consistency(recommendation, search_without_de
 
 
 def test_oembed_endpoint_json():
+    expected_response = {
+        "version":"4.0",
+        "width":1400,
+        "height":933,
+        "title":"Mirrow Mirrow",
+        "author_name":"Quetzi Navarro",
+        "author_url":None,
+        "license_url":"https://creativecommons.org/licenses/by-nc-nd/4.0/"
+    }
     response = requests.get(
         API_URL + '/v1/oembed?format=json&url=https%3A//search.creativecommons.org/photos/9be4c069-c7cb-4af0-9403-6e1547212060'
     )
     assert response.status_code == 200
     parsed = response.json()
-    assert parsed['license_url'] == "https://creativecommons.org/licenses/by-nc-nd/4.0/"
+    assert parsed == expected_response
