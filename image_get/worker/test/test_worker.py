@@ -55,11 +55,12 @@ class FakeImageResponse:
 
 
 class FakeAioSession:
-    def __init__(self, corrupt=False):
+    def __init__(self, corrupt=False, status=200):
         self.corrupt = corrupt
+        self.status = status
 
     async def get(self, url):
-        return FakeImageResponse(self.corrupt)
+        return FakeImageResponse(self.status, self.corrupt)
 
 
 class FakeRedis:
@@ -72,6 +73,11 @@ class FakeRedis:
     async def decr(self, key):
         self.store[key] -= 1
         return self.store[key]
+
+    async def rpush(self, key, value):
+        if key not in self.store:
+            self.store[key] = []
+        self.store[key].append(value)
 
 
 class AioNetworkSimulatingSession:
@@ -109,7 +115,6 @@ class AioNetworkSimulatingSession:
         original_load = self.load
         rps = len(self.requests_last_second)
         utilization = rps / self.max_requests_per_second
-        log.debug(f'Current RPS: {rps}')
         if utilization <= 0.8:
             self.load = self.Load.LOW
         elif 0.8 < utilization < 1:
@@ -118,7 +123,7 @@ class AioNetworkSimulatingSession:
             self.load = self.Load.OVERLOADED
             if self.fail_if_overloaded:
                 assert False, f"You DDoS'd the server! Utilization: " \
-                              f"{utilization}, reqs/s: {len(self.requests_last_second)}"
+                              f"{utilization}, reqs/s: {rps}"
         if self.load != original_load:
             log.debug(f'Changed simulator load status to {self.load}')
 
@@ -195,6 +200,19 @@ async def test_handles_corrupt_images_gracefully():
     )
 
 
+@pytest.mark.asyncio
+async def test_rate_limiter_stats():
+    # Create a fake token
+    redis = FakeRedis()
+    redis.store['currtokens:example.gov'] = 1
+    aiosession = RateLimitedClientSession(
+        FakeAioSession(status=403),
+        redis=redis
+    )
+    _ = await aiosession.get('https://www.example.gov/whatever.jpg')
+    assert len(redis.store['err60s:example.gov']) == 1
+
+
 async def get_mock_consumer(msg_count=1000, max_rps=10):
     """ Create a mock consumer with a bunch of fake messages in it. """
     consumer = FakeConsumer()
@@ -229,7 +247,7 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
 
 
 async def mock_listen():
-    consumer = await get_mock_consumer(msg_count=500, max_rps=15)
+    consumer = await get_mock_consumer(msg_count=500, max_rps=61)
     log.debug('Starting consumer')
     await consumer
 

@@ -75,8 +75,8 @@ async def replenish_tokens(redis):
     # Todo XXX delete this function; we need to automatically learn the rate limit
     last_replenish = time.monotonic()
     while True:
-        await redis.set('currtokens:staticflickr.com', 10)
-        await redis.set('currtokens:example.gov', 10)
+        await redis.set('currtokens:staticflickr.com', 60)
+        await redis.set('currtokens:example.gov', 60)
         now = time.monotonic()
         took = now - last_replenish
         last_replenish = now

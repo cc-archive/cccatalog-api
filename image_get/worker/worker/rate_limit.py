@@ -1,5 +1,6 @@
 import asyncio
 import tldextract
+import time
 """
 Every TLD (e.g. flickr.com, metmuseum.org) gets a token bucket. Before a worker
 crawls an image from a domain, it must acquire a token from the right bucket.
@@ -11,15 +12,14 @@ baseline *time to first byte* (TTFB), which is used to measure whether we are
 placing any strain on a server. Once a baseline has been established, we will
 slowly ramp up the request rate until there is noticeable strain in the form of
 an increase in TTFB or errors are returned (such as 429 Rate Limit Exceeded).
-
-The crawler cluster uses a masterless model, meaning every worker will try to
-manage the token buckets. Race conditions are prevented with distributed locks.
-To minimize contention and blocking, we should lock optimistically whenever
-feasible.
 """
 
 # Prefix for keys tracking TLD rate limits
-PREFIX = 'currtokens:'
+CURRTOKEN_PREFIX = 'currtokens:'
+# Error windows
+ERRS_60s = 'err60s:'
+ERRS_1hr = 'err1hr:'
+ERRS_12hr = 'err12r:'
 
 
 class RateLimitedClientSession:
@@ -30,13 +30,19 @@ class RateLimitedClientSession:
         self.client = aioclient
         self.redis = redis
 
+    async def _register_error(self, tld):
+        now = time.monotonic()
+        await self.redis.rpush(f'{ERRS_60s}{tld.domain}.{tld.suffix}', now)
+        await self.redis.rpush(f'{ERRS_1hr}{tld.domain}.{tld.suffix}', now)
+        await self.redis.rpush(f'{ERRS_12hr}{tld.domain}.{tld.suffix}', now)
+
     async def _get_token(self, tld):
         """
         Get a rate limiting token for a URL.
         :param tld: The domain of the item.
         :return: whether a token was successfully obtained
         """
-        token_key = f'{PREFIX}{tld.domain}.{tld.suffix}'
+        token_key = f'{CURRTOKEN_PREFIX}{tld.domain}.{tld.suffix}'
         tokens = int(await self.redis.decr(token_key))
         if tokens >= 0:
             token_acquired = True
@@ -51,4 +57,7 @@ class RateLimitedClientSession:
         token_acquired = False
         while not token_acquired:
             token_acquired = await self._get_token(tld)
-        return await self.client.get(url)
+        resp = await self.client.get(url)
+        if resp.status >= 300:
+            await self._register_error(tld)
+        return resp
