@@ -1,4 +1,5 @@
 import asyncio
+import aiohttp
 import tldextract
 import time
 """
@@ -19,7 +20,7 @@ CURRTOKEN_PREFIX = 'currtokens:'
 # Error windows
 ERRS_60s = 'err60s:'
 ERRS_1hr = 'err1hr:'
-ERRS_12hr = 'err12r:'
+ERRS_12hr = 'err12hr:'
 
 
 class RateLimitedClientSession:

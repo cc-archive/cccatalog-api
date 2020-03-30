@@ -16,4 +16,4 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
 TARGET_RESOLUTION = (640, 480)
 
 # Number of images to download and resize simultaneously
-BATCH_SIZE = 10000
+BATCH_SIZE = 15000

@@ -75,8 +75,8 @@ async def replenish_tokens(redis):
     # Todo XXX delete this function; we need to automatically learn the rate limit
     last_replenish = time.monotonic()
     while True:
-        await redis.set('currtokens:staticflickr.com', 60)
-        await redis.set('currtokens:example.gov', 60)
+        await redis.set('currtokens:staticflickr.com', 100)
+        await redis.set('currtokens:example.gov', 100)
         now = time.monotonic()
         took = now - last_replenish
         last_replenish = now
@@ -104,7 +104,10 @@ async def setup_consumer():
     )
 
     # Todo: clean this up
-    redis_client = aredis.StrictRedis(host=settings.REDIS_HOST)
+    redis_client = aredis.StrictRedis(
+        host=settings.REDIS_HOST,
+        max_connections=50
+    )
     loop = asyncio.get_event_loop()
     loop.create_task(replenish_tokens(redis_client))
 
