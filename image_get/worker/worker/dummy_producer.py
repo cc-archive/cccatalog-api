@@ -22,13 +22,6 @@ msgs = [
     }
 ]
 
-msgs = [
-    {
-        'url': 'https://example.gov/test.jpg',
-        'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca'
-    }
-]
-
 encoded_msgs = [json.dumps(msg) for msg in msgs]
 
 client = KafkaClient(hosts='kafka:9092')

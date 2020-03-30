@@ -10,10 +10,8 @@ KAFKA_HOSTS = os.getenv('KAFKA_HOSTS', 'kafka:9092')
 ZOOKEEPER_HOST = os.getenv('ZOOKEEPER_HOST', 'zookeeper:2181')
 REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
 
-
-# Generate a thumbnail at each resolution. The key determines the name
-# of the folder that will hold the resulting thumbnail.
+# Thumbnail size
 TARGET_RESOLUTION = (640, 480)
 
-# Number of images to download and resize simultaneously
-BATCH_SIZE = 15000
+# Number of images to download and resize simultaneously.
+BATCH_SIZE = 500
