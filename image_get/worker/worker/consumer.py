@@ -38,7 +38,7 @@ def poll_consumer(consumer, batch_size):
     return batch
 
 
-async def monitor_tasks(tasks, ):
+async def monitor_tasks(tasks):
     last_time = time.monotonic()
     last_count = 0
     while True:
