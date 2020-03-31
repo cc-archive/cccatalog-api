@@ -107,8 +107,8 @@ async def replenish_tokens(redis):
     """ """
     # Todo XXX delete this function; we need to automatically learn the rate limit
     while True:
-        await redis.set('currtokens:staticflickr.com', 60)
-        await redis.set('currtokens:example.gov', 60)
+        await redis.set('currtokens:staticflickr.com', 1)
+        await redis.set('currtokens:example.gov', 1)
         await asyncio.sleep(1)
 
 

@@ -63,6 +63,25 @@ class FakeAioSession:
         return FakeImageResponse(self.status, self.corrupt)
 
 
+class FakeRedisPipeline:
+    def __init__(self, redis):
+        self.redis = redis
+        self.todo = []
+
+    def rpush(self, key, value):
+        self.todo.append(partial(self.redis.rpush, key, value))
+
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def execute(self):
+        for task in self.todo:
+            await task()
+
+
 class FakeRedis:
     def __init__(self, *args, **kwargs):
         self.store = {}
@@ -78,6 +97,9 @@ class FakeRedis:
         if key not in self.store:
             self.store[key] = []
         self.store[key].append(value)
+
+    async def pipeline(self):
+        return FakeRedisPipeline(self)
 
 
 class AioNetworkSimulatingSession:
@@ -238,8 +260,6 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
         consumer.insert(msg)
 
     redis = FakeRedis()
-
-    # Todo XXX temp
     loop = asyncio.get_event_loop()
     loop.create_task(_replenish_tokens_10rps(redis))
 

@@ -32,9 +32,11 @@ class RateLimitedClientSession:
 
     async def _register_error(self, tld):
         now = time.monotonic()
-        await self.redis.rpush(f'{ERRS_60s}{tld.domain}.{tld.suffix}', now)
-        await self.redis.rpush(f'{ERRS_1hr}{tld.domain}.{tld.suffix}', now)
-        await self.redis.rpush(f'{ERRS_12hr}{tld.domain}.{tld.suffix}', now)
+        async with await self.redis.pipeline() as pipe:
+            pipe.rpush(f'{ERRS_60s}{tld.domain}.{tld.suffix}', now)
+            pipe.rpush(f'{ERRS_1hr}{tld.domain}.{tld.suffix}', now)
+            pipe.rpush(f'{ERRS_12hr}{tld.domain}.{tld.suffix}', now)
+            await pipe.execute()
 
     async def _get_token(self, tld):
         """
