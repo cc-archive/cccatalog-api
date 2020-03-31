@@ -90,13 +90,23 @@ class FakeRedis:
         self.store[key] = val
 
     async def decr(self, key):
-        self.store[key] -= 1
+        if key in self.store:
+            self.store[key] -= 1
+        else:
+            self.store[key] = 1
         return self.store[key]
 
     async def rpush(self, key, value):
         if key not in self.store:
             self.store[key] = []
         self.store[key].append(value)
+
+    async def incr(self, key):
+        if key in self.store:
+            self.store[key] += 1
+        else:
+            self.store[key] = 1
+        return self.store[key]
 
     async def pipeline(self):
         return FakeRedisPipeline(self)
@@ -273,7 +283,8 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
 
     image_processor = partial(
         process_image, session=aiosession,
-        persister=validate_thumbnail
+        persister=validate_thumbnail,
+        redis=redis
     )
     return consume(consumer, image_processor, terminate=True)
 

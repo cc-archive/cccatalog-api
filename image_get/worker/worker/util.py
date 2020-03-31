@@ -46,9 +46,12 @@ async def _handle_error(url, msg):
     pass
 
 
-async def process_image(persister, session, url, identifier, semaphore):
+async def process_image(persister, session, url, identifier, semaphore, redis=None):
     """
     Get an image, resize it, and persist it.
+    :param redis: If included, record successfully resized images here.
+    :param semaphore: A shared semaphore limiting concurrent execution.
+    :param identifier: Our identifier for the image at the URL.
     :param persister: The function defining image persistence. It
     should do something like save an image to disk, or upload it to
     S3.
@@ -72,3 +75,5 @@ async def process_image(persister, session, url, identifier, semaphore):
         await loop.run_in_executor(
             None, partial(persister, img=thumb, identifier=identifier)
         )
+        if redis:
+            await redis.incr('successfully_resized')

@@ -141,7 +141,8 @@ async def setup_consumer():
     )
     image_processor = partial(
         process_image, session=aiosession,
-        persister=partial(save_thumbnail_s3, s3_client=s3)
+        persister=partial(save_thumbnail_s3, s3_client=s3),
+        redis=redis_client
     )
     return consume(consumer, image_processor)
 
