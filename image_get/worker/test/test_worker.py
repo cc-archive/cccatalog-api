@@ -4,7 +4,7 @@ import asyncio
 import time
 import random
 import logging as log
-from worker.consumer import poll_consumer, consume, replenish_tokens
+from worker.consumer import poll_consumer, consume
 from worker.util import process_image
 from worker.rate_limit import RateLimitedClientSession
 from PIL import Image
@@ -216,6 +216,14 @@ async def test_rate_limiter_stats():
     assert len(redis.store['err60s:example.gov']) == 1
 
 
+async def _replenish_tokens_10rps(redis):
+    """ Replenish rate limit tokens at 10 requests per second."""
+    while True:
+        await redis.set('currtokens:staticflickr.com', 10)
+        await redis.set('currtokens:example.gov', 10)
+        await asyncio.sleep(1)
+
+
 async def get_mock_consumer(msg_count=1000, max_rps=10):
     """ Create a mock consumer with a bunch of fake messages in it. """
     consumer = FakeConsumer()
@@ -233,7 +241,7 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
 
     # Todo XXX temp
     loop = asyncio.get_event_loop()
-    loop.create_task(replenish_tokens(redis))
+    loop.create_task(_replenish_tokens(redis))
 
     aiosession = RateLimitedClientSession(
         AioNetworkSimulatingSession(

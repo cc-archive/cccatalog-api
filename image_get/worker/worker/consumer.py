@@ -6,6 +6,7 @@ import aredis
 import boto3
 import botocore.client
 import time
+import statistics
 from functools import partial
 from timeit import default_timer as timer
 from worker.util import kafka_connect, parse_message, save_thumbnail_s3,\
@@ -38,18 +39,25 @@ def poll_consumer(consumer, batch_size):
     return batch
 
 
-async def monitor_tasks(tasks):
+async def monitor_task_list(tasks):
     last_time = time.monotonic()
-    last_count = 0
+    total_samples = 0
+    total_rate = 0
     while True:
-        num_completed = sum([t.done() for t in tasks])
         now = time.monotonic()
+        num_completed = sum([t.done() for t in tasks])
         task_delta = num_completed - last_count
         last_count = num_completed
         time_delta = now - last_time
+        resize_rate = task_delta / time_delta
         last_time = now
-        if task_delta:
-            log.info(f'resize_rate={task_delta/time_delta}, num_completed={num_completed}')
+        if resize_rate > 0:
+            total_rate += resize_rate
+            total_samples += 1
+            mean = total_rate / total_samples
+            log.info(f'resize_rate_1s={round(resize_rate, 2)}/s, '
+                     f'avg_resize_rate={round(mean, 2)}/s, '
+                     f'num_completed={num_completed}')
         await asyncio.sleep(1)
 
 
@@ -63,7 +71,7 @@ async def consume(consumer, image_processor, terminate=False):
     total = 0
     semaphore = asyncio.BoundedSemaphore(settings.BATCH_SIZE)
     scheduled = []
-    asyncio.create_task(monitor_tasks(scheduled))
+    asyncio.create_task(monitor_task_list(scheduled))
     while True:
         start = timer()
         messages = poll_consumer(consumer, settings.SCHEDULE_SIZE)
@@ -97,8 +105,8 @@ async def replenish_tokens(redis):
     """ """
     # Todo XXX delete this function; we need to automatically learn the rate limit
     while True:
-        await redis.set('currtokens:staticflickr.com', 10)
-        await redis.set('currtokens:example.gov', 10)
+        await redis.set('currtokens:staticflickr.com', 60)
+        await redis.set('currtokens:example.gov', 60)
         await asyncio.sleep(1)
 
 

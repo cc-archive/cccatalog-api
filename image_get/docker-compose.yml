@@ -6,6 +6,7 @@ services:
     image: redis
     ports:
       - "6379:6379"
+    command: ["redis-server", "--maxclients 65000"]
   zookeeper:
     image: wurstmeister/zookeeper
     ports:
