@@ -6,7 +6,6 @@ import aredis
 import boto3
 import botocore.client
 import time
-import statistics
 from functools import partial
 from timeit import default_timer as timer
 from worker.util import kafka_connect, parse_message, save_thumbnail_s3,\
@@ -40,9 +39,12 @@ def poll_consumer(consumer, batch_size):
 
 
 async def monitor_task_list(tasks):
-    last_time = time.monotonic()
-    total_samples = 0
+    # For computing average requests per second
+    num_samples = 0
     total_rate = 0
+
+    last_time = time.monotonic()
+    last_count = 0
     while True:
         now = time.monotonic()
         num_completed = sum([t.done() for t in tasks])
@@ -53,8 +55,8 @@ async def monitor_task_list(tasks):
         last_time = now
         if resize_rate > 0:
             total_rate += resize_rate
-            total_samples += 1
-            mean = total_rate / total_samples
+            num_samples += 1
+            mean = total_rate / num_samples
             log.info(f'resize_rate_1s={round(resize_rate, 2)}/s, '
                      f'avg_resize_rate={round(mean, 2)}/s, '
                      f'num_completed={num_completed}')
