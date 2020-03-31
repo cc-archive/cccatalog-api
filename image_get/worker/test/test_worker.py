@@ -241,7 +241,7 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
 
     # Todo XXX temp
     loop = asyncio.get_event_loop()
-    loop.create_task(_replenish_tokens(redis))
+    loop.create_task(_replenish_tokens_10rps(redis))
 
     aiosession = RateLimitedClientSession(
         AioNetworkSimulatingSession(
