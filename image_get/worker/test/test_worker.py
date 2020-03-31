@@ -102,6 +102,7 @@ class AioNetworkSimulatingSession:
         self.requests_last_second = deque()
         self.load = self.Load.LOW
         self.fail_if_overloaded = fail_if_overloaded
+        self.tripped = False
 
     def record_request(self):
         """ Record a request and flush out expired records. """
@@ -244,14 +245,13 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
 
     image_processor = partial(
         process_image, session=aiosession,
-        persister=validate_thumbnail,
-        semaphore=asyncio.BoundedSemaphore(msg_count)
+        persister=validate_thumbnail
     )
     return consume(consumer, image_processor, terminate=True)
 
 
 async def mock_listen():
-    consumer = await get_mock_consumer(msg_count=500, max_rps=61)
+    consumer = await get_mock_consumer(msg_count=100, max_rps=11)
     log.debug('Starting consumer')
     await consumer
 

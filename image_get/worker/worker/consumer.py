@@ -50,7 +50,7 @@ async def monitor_tasks(tasks):
         last_time = now
         if task_delta:
             log.info(f'resize_rate={task_delta/time_delta}, num_completed={num_completed}')
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)
 
 
 async def consume(consumer, image_processor, terminate=False):
@@ -79,17 +79,16 @@ async def consume(consumer, image_processor, terminate=False):
             )
         if tasks:
             batch_size = len(tasks)
-            log.info(f'batch_size={batch_size}')
             total += batch_size
             for task in tasks:
                 t = asyncio.create_task(task)
                 scheduled.append(t)
             total_time = timer() - start
             log.info(f'event_processing_rate={batch_size/total_time}/s')
-            log.info(f'batch_time={total_time}s')
             consumer.commit_offsets()
         else:
             if terminate:
+                await asyncio.gather(*scheduled)
                 return
             await asyncio.sleep(10)
 
@@ -98,8 +97,8 @@ async def replenish_tokens(redis):
     """ """
     # Todo XXX delete this function; we need to automatically learn the rate limit
     while True:
-        await redis.set('currtokens:staticflickr.com', 100)
-        await redis.set('currtokens:example.gov', 100)
+        await redis.set('currtokens:staticflickr.com', 10)
+        await redis.set('currtokens:example.gov', 10)
         await asyncio.sleep(1)
 
 
