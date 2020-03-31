@@ -82,7 +82,7 @@ async def consume(consumer, image_processor, terminate=False):
             messages = poll_consumer(consumer, num_to_schedule)
             # Schedule resizing tasks
             if messages:
-                log.info(f'Scheduling {num_to_schedule} additional tasks.')
+                log.info(f'Scheduling {len(messages)} additional tasks.')
                 batch_size = len(messages)
                 total += batch_size
                 for msg in messages:
