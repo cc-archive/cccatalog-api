@@ -46,7 +46,7 @@ async def _handle_error(url, msg):
     pass
 
 
-async def process_image(persister, session, url, identifier):
+async def process_image(persister, session, url, identifier, semaphore):
     """
     Get an image, resize it, and persist it.
     :param persister: The function defining image persistence. It
@@ -55,19 +55,20 @@ async def process_image(persister, session, url, identifier):
     :param session: An aiohttp client session.
     :param url: The URL of the image.
     """
-    loop = asyncio.get_event_loop()
-    img_resp = await session.get(url)
-    if img_resp.status >= 400:
-        await _handle_error(url, f'status {img_resp.status}')
-        return
-    buffer = BytesIO(await img_resp.read())
-    try:
-        img = await loop.run_in_executor(None, partial(Image.open, buffer))
-    except UnidentifiedImageError:
-        return
-    thumb = await loop.run_in_executor(
-        None, partial(thumbnail_image, img)
-    )
-    await loop.run_in_executor(
-        None, partial(persister, img=thumb, identifier=identifier)
-    )
+    async with semaphore:
+        loop = asyncio.get_event_loop()
+        img_resp = await session.get(url)
+        if img_resp.status >= 400:
+            await _handle_error(url, f'status {img_resp.status}')
+            return
+        buffer = BytesIO(await img_resp.read())
+        try:
+            img = await loop.run_in_executor(None, partial(Image.open, buffer))
+        except UnidentifiedImageError:
+            return
+        thumb = await loop.run_in_executor(
+            None, partial(thumbnail_image, img)
+        )
+        await loop.run_in_executor(
+            None, partial(persister, img=thumb, identifier=identifier)
+        )

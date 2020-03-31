@@ -13,5 +13,8 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
 # Thumbnail size
 TARGET_RESOLUTION = (640, 480)
 
+# Number of tasks to schedule (but not necessarily execute) simultaneously
+SCHEDULE_SIZE = 50000
+
 # Number of images to download and resize simultaneously.
-BATCH_SIZE = 500
+BATCH_SIZE = 1000

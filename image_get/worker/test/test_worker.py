@@ -186,7 +186,8 @@ async def test_pipeline():
         persister=validate_thumbnail,
         session=FakeAioSession(),
         url='fake_url',
-        identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d'
+        identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
+        semaphore=asyncio.BoundedSemaphore()
     )
 
 
@@ -196,7 +197,8 @@ async def test_handles_corrupt_images_gracefully():
         persister=validate_thumbnail,
         session=FakeAioSession(corrupt=True),
         url='fake_url',
-        identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d'
+        identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
+        semaphore=asyncio.BoundedSemaphore()
     )
 
 
@@ -239,9 +241,11 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
         ),
         redis=redis
     )
+
     image_processor = partial(
         process_image, session=aiosession,
-        persister=validate_thumbnail
+        persister=validate_thumbnail,
+        semaphore=asyncio.BoundedSemaphore(msg_count)
     )
     return consume(consumer, image_processor, terminate=True)
 

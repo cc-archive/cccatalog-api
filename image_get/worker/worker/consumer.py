@@ -38,6 +38,21 @@ def poll_consumer(consumer, batch_size):
     return batch
 
 
+async def monitor_tasks(tasks, ):
+    last_time = time.monotonic()
+    last_count = 0
+    while True:
+        num_completed = sum([t.done() for t in tasks])
+        now = time.monotonic()
+        task_delta = num_completed - last_count
+        last_count = num_completed
+        time_delta = now - last_time
+        last_time = now
+        if task_delta:
+            log.info(f'resize_rate={task_delta/time_delta}, num_completed={num_completed}')
+        await asyncio.sleep(5)
+
+
 async def consume(consumer, image_processor, terminate=False):
     """
     Listen for inbound image URLs and process them.
@@ -46,20 +61,29 @@ async def consume(consumer, image_processor, terminate=False):
     :param terminate: Whether to terminate when there are no more messages.
     """
     total = 0
+    semaphore = asyncio.BoundedSemaphore(settings.BATCH_SIZE)
+    scheduled = []
+    asyncio.create_task(monitor_tasks(scheduled))
     while True:
-        messages = poll_consumer(consumer, settings.BATCH_SIZE)
+        start = timer()
+        messages = poll_consumer(consumer, settings.SCHEDULE_SIZE)
         # Schedule resizing tasks
         tasks = []
-        start = timer()
         for msg in messages:
             tasks.append(
-                image_processor(url=msg['url'], identifier=msg['uuid'])
+                image_processor(
+                    url=msg['url'],
+                    identifier=msg['uuid'],
+                    semaphore=semaphore
+                )
             )
         if tasks:
             batch_size = len(tasks)
             log.info(f'batch_size={batch_size}')
             total += batch_size
-            await asyncio.gather(*tasks)
+            for task in tasks:
+                t = asyncio.create_task(task)
+                scheduled.append(t)
             total_time = timer() - start
             log.info(f'event_processing_rate={batch_size/total_time}/s')
             log.info(f'batch_time={total_time}s')
@@ -67,7 +91,7 @@ async def consume(consumer, image_processor, terminate=False):
         else:
             if terminate:
                 return
-            time.sleep(10)
+            await asyncio.sleep(10)
 
 
 async def replenish_tokens(redis):
