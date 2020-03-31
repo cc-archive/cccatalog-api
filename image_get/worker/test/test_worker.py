@@ -47,7 +47,7 @@ class FakeImageResponse:
     async def read(self):
         # 1024 x 768 sample image
         if self.corrupt:
-            location = 'test/corrupt.jpg'
+            location = 'test/test_worker.py'
         else:
             location = 'test/test_image.jpg'
         with open(location, 'rb') as f:
@@ -215,24 +215,30 @@ def validate_thumbnail(img, identifier):
 async def test_pipeline():
     """ Test that the image processor completes with a fake image. """
     # validate_thumbnail callback performs the actual assertions
+    redis = FakeRedis()
     await process_image(
         persister=validate_thumbnail,
         session=FakeAioSession(),
         url='fake_url',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-        semaphore=asyncio.BoundedSemaphore()
+        semaphore=asyncio.BoundedSemaphore(),
+        redis=redis
     )
+    assert redis.store['successfully_resized'] == 1
 
 
 @pytest.mark.asyncio
 async def test_handles_corrupt_images_gracefully():
+    redis = FakeRedis()
     await process_image(
         persister=validate_thumbnail,
         session=FakeAioSession(corrupt=True),
         url='fake_url',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-        semaphore=asyncio.BoundedSemaphore()
+        semaphore=asyncio.BoundedSemaphore(),
+        redis=redis
     )
+
 
 
 @pytest.mark.asyncio

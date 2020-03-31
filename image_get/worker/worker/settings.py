@@ -19,4 +19,6 @@ TARGET_RESOLUTION = (640, 480)
 SCHEDULE_SIZE = int(os.getenv('SCHEDULE_SIZE', '1000000'))
 
 # Number of resize tasks to run concurrently.
+# Each task requires a connection to Redis, so be mindful of the max connection
+# limit.
 BATCH_SIZE = 1000

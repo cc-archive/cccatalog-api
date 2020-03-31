@@ -40,12 +40,6 @@ def save_thumbnail_s3(s3_client, img: BytesIO, identifier):
     )
 
 
-async def _handle_error(url, msg):
-    # Todo: retries
-    # Todo: penalize rate limit
-    pass
-
-
 async def process_image(persister, session, url, identifier, semaphore, redis=None):
     """
     Get an image, resize it, and persist it.
@@ -62,12 +56,13 @@ async def process_image(persister, session, url, identifier, semaphore, redis=No
         loop = asyncio.get_event_loop()
         img_resp = await session.get(url)
         if img_resp.status >= 400:
-            await _handle_error(url, f'status {img_resp.status}')
+            await redis.incr('resize_errors')
             return
         buffer = BytesIO(await img_resp.read())
         try:
             img = await loop.run_in_executor(None, partial(Image.open, buffer))
         except UnidentifiedImageError:
+            await redis.incr('resize_errors')
             return
         thumb = await loop.run_in_executor(
             None, partial(thumbnail_image, img)
