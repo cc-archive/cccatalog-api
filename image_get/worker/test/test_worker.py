@@ -239,7 +239,7 @@ async def test_rate_limiter_stats():
 
 
 async def _replenish_tokens_10rps(redis):
-    """ Replenish rate limit tokens at 10 requests per second."""
+    """ Replenish rate limit tokens at 10 requests per second. """
     while True:
         await redis.set('currtokens:staticflickr.com', 10)
         await redis.set('currtokens:example.gov', 10)

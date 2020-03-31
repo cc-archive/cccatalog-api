@@ -75,40 +75,41 @@ async def consume(consumer, image_processor, terminate=False):
     scheduled = []
     asyncio.create_task(monitor_task_list(scheduled))
     while True:
-        start = timer()
-        messages = poll_consumer(consumer, settings.SCHEDULE_SIZE)
-        # Schedule resizing tasks
-        tasks = []
-        for msg in messages:
-            tasks.append(
-                image_processor(
-                    url=msg['url'],
-                    identifier=msg['uuid'],
-                    semaphore=semaphore
-                )
-            )
-        if tasks:
-            batch_size = len(tasks)
-            total += batch_size
-            for task in tasks:
-                t = asyncio.create_task(task)
-                scheduled.append(t)
-            total_time = timer() - start
-            log.info(f'event_processing_rate={batch_size/total_time}/s')
-            consumer.commit_offsets()
-        else:
-            if terminate:
-                await asyncio.gather(*scheduled)
-                return
-            await asyncio.sleep(10)
+        num_tasks_running = sum([not t.done() for t in scheduled])
+        num_to_schedule = settings.SCHEDULE_SIZE - num_tasks_running
+        if num_to_schedule:
+            start = timer()
+            messages = poll_consumer(consumer, num_to_schedule)
+            # Schedule resizing tasks
+            if messages:
+                log.info(f'Scheduling {num_to_schedule} additional tasks.')
+                batch_size = len(messages)
+                total += batch_size
+                for msg in messages:
+                    t = asyncio.create_task(
+                       image_processor(
+                           url=msg['url'],
+                           identifier=msg['uuid'],
+                           semaphore=semaphore
+                       )
+                    )
+                    scheduled.append(t)
+                total_time = timer() - start
+                log.info(f'event_processing_rate={batch_size/total_time}/s')
+                consumer.commit_offsets()
+            else:
+                if terminate:
+                    await asyncio.gather(*scheduled)
+                    return
+                await asyncio.sleep(30)
 
 
 async def replenish_tokens(redis):
     """ """
     # Todo XXX delete this function; we need to automatically learn the rate limit
     while True:
-        await redis.set('currtokens:staticflickr.com', 1)
-        await redis.set('currtokens:example.gov', 1)
+        await redis.set('currtokens:staticflickr.com', 60)
+        await redis.set('currtokens:example.gov', 60)
         await asyncio.sleep(1)
 
 
@@ -130,9 +131,7 @@ async def setup_consumer():
     )
 
     # Todo: clean this up
-    redis_client = aredis.StrictRedis(
-        host=settings.REDIS_HOST
-    )
+    redis_client = aredis.StrictRedis(host=settings.REDIS_HOST)
     loop = asyncio.get_event_loop()
     loop.create_task(replenish_tokens(redis_client))
 

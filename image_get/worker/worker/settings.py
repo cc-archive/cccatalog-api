@@ -18,5 +18,5 @@ TARGET_RESOLUTION = (640, 480)
 # consuming 3gb of memory in tasks alone.
 SCHEDULE_SIZE = int(os.getenv('SCHEDULE_SIZE', '1000000'))
 
-# Number of images to download and resize simultaneously.
+# Number of resize tasks to run concurrently.
 BATCH_SIZE = 1000

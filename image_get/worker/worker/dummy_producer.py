@@ -27,5 +27,5 @@ encoded_msgs = [json.dumps(msg) for msg in msgs]
 client = KafkaClient(hosts='kafka:9092')
 topic = client.topics['inbound_images']
 with topic.get_sync_producer() as producer:
-    for msg in islice(cycle(encoded_msgs), 1000000):
+    for msg in islice(cycle(encoded_msgs), 5000):
         producer.produce(bytes(msg, 'utf-8'))
