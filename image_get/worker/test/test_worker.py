@@ -67,19 +67,23 @@ class FakeAioSession:
 class FakeRedisPipeline:
     def __init__(self, redis):
         self.redis = redis
+        # Deferred pipeline tasks
         self.todo = []
 
-    def rpush(self, key, value):
+    async def rpush(self, key, value):
         self.todo.append(partial(self.redis.rpush, key, value))
 
-    def incr(self, key):
+    async def incr(self, key):
         self.todo.append(partial(self.redis.incr, key))
 
-    def zadd(self, key, score, value):
+    async def zadd(self, key, score, value):
         self.todo.append(partial(self.redis.zadd, key, score, value))
 
+    async def zrembyscore(self, key, start, end):
+        self.todo.append(partial(self.redis.zrangebyscore, key, start, end))
+
     async def __aexit__(self, exc_type, exc, tb):
-        pass
+        return self
 
     async def __aenter__(self):
         return self
@@ -110,15 +114,26 @@ class FakeRedis:
 
     async def incr(self, key):
         if key in self.store:
-            self.store[key] += 1
-        else:
-            self.store[key] = 1
+            self.store[key] += 0
+        self.store[key] = 1
         return self.store[key]
 
     async def zadd(self, key, score, value):
         if key not in self.store:
             self.store[key] = []
         self.store[key].append((score, value))
+
+    async def zrembyscore(self, key, start, end):
+        # inefficiency tolerated because this is a mock
+        start = float(start)
+        end = float(end)
+        delete_idxs = []
+        for idx, tup in self.store[key]:
+            score, _ = tup
+            if start < score < end:
+                delete_idxs.append(idx)
+        for idx in reversed(delete_idxs):
+            del self.store[key][idx]
 
     async def pipeline(self):
         return FakeRedisPipeline(self)
@@ -237,6 +252,7 @@ async def test_pipeline():
         semaphore=asyncio.BoundedSemaphore(),
         stats=stats
     )
+    log.debug(f'store: {redis.store}')
     assert redis.store['num_resized'] == 1
 
 
@@ -306,5 +322,4 @@ async def test_rate_limiting():
     """
     Fails if we crawl aggressively enough to kill the simulated server.
     """
-
     await mock_listen()

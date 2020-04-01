@@ -15,6 +15,7 @@ an increase in TTFB or errors are returned (such as 429 Rate Limit Exceeded).
 """
 
 # Prefix for keys tracking TLD rate limits
+# ex: currtokens:staticflickr.com
 CURRTOKEN_PREFIX = 'currtokens:'
 
 
