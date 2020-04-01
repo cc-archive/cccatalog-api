@@ -3,10 +3,13 @@ import json
 import logging as log
 import time
 import pykafka
+import tldextract
 import worker.settings as settings
+import worker.stats_reporting as stats
 from functools import partial
 from io import BytesIO
 from PIL import Image, UnidentifiedImageError
+from worker.stats_reporting import register_error
 
 
 def kafka_connect():
@@ -53,10 +56,11 @@ async def process_image(persister, session, url, identifier, semaphore, redis=No
     :param url: The URL of the image.
     """
     async with semaphore:
+        tld = tldextract.extract(url)
         loop = asyncio.get_event_loop()
         img_resp = await session.get(url)
         if img_resp.status >= 400:
-            await redis.incr('resize_errors')
+            await stats.register_error(redis, tld)
             return
         buffer = BytesIO(await img_resp.read())
         try:

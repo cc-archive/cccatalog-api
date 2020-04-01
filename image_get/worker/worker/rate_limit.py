@@ -1,6 +1,6 @@
 import asyncio
 import tldextract
-import time
+
 """
 Every TLD (e.g. flickr.com, metmuseum.org) gets a token bucket. Before a worker
 crawls an image from a domain, it must acquire a token from the right bucket.
@@ -16,10 +16,6 @@ an increase in TTFB or errors are returned (such as 429 Rate Limit Exceeded).
 
 # Prefix for keys tracking TLD rate limits
 CURRTOKEN_PREFIX = 'currtokens:'
-# Error windows
-ERRS_60s = 'err60s:'
-ERRS_1hr = 'err1hr:'
-ERRS_12hr = 'err12hr:'
 
 
 class RateLimitedClientSession:
@@ -29,14 +25,6 @@ class RateLimitedClientSession:
     def __init__(self, aioclient, redis):
         self.client = aioclient
         self.redis = redis
-
-    async def _register_error(self, tld):
-        now = time.monotonic()
-        async with await self.redis.pipeline() as pipe:
-            pipe.rpush(f'{ERRS_60s}{tld.domain}.{tld.suffix}', now)
-            pipe.rpush(f'{ERRS_1hr}{tld.domain}.{tld.suffix}', now)
-            pipe.rpush(f'{ERRS_12hr}{tld.domain}.{tld.suffix}', now)
-            await pipe.execute()
 
     async def _get_token(self, tld):
         """
@@ -59,7 +47,4 @@ class RateLimitedClientSession:
         token_acquired = False
         while not token_acquired:
             token_acquired = await self._get_token(tld)
-        resp = await self.client.get(url)
-        if resp.status >= 300:
-            await self._register_error(tld)
-        return resp
+        return await self.client.get(url)

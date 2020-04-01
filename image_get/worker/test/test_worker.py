@@ -71,6 +71,9 @@ class FakeRedisPipeline:
     def rpush(self, key, value):
         self.todo.append(partial(self.redis.rpush, key, value))
 
+    def incr(self, key):
+        self.todo.append(partial(self.redis.incr, key))
+
     async def __aexit__(self, exc_type, exc, tb):
         pass
 
@@ -238,20 +241,6 @@ async def test_handles_corrupt_images_gracefully():
         semaphore=asyncio.BoundedSemaphore(),
         redis=redis
     )
-
-
-
-@pytest.mark.asyncio
-async def test_rate_limiter_stats():
-    # Create a fake token
-    redis = FakeRedis()
-    redis.store['currtokens:example.gov'] = 1
-    aiosession = RateLimitedClientSession(
-        FakeAioSession(status=403),
-        redis=redis
-    )
-    _ = await aiosession.get('https://www.example.gov/whatever.jpg')
-    assert len(redis.store['err60s:example.gov']) == 1
 
 
 async def _replenish_tokens_10rps(redis):
