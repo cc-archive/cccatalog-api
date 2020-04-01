@@ -22,8 +22,8 @@ class StatsManager:
     async def record_error(self, tld):
         now = time.monotonic()
         async with await self.redis.pipeline() as pipe:
-            pipe.incr(ERROR_COUNT)
-            pipe.incr(f'{TLD_ERRORS}{tld.domain}.{tld.suffix}')
+            await pipe.incr(ERROR_COUNT)
+            await pipe.incr(f'{TLD_ERRORS}{tld.domain}.{tld.suffix}')
             pipe.zadd(f'{ERRS_60s}{tld.domain}.{tld.suffix}', now, 1)
             pipe.zadd(f'{ERRS_1hr}{tld.domain}.{tld.suffix}', now, 1)
             pipe.zadd(f'{ERRS_12hr}{tld.domain}.{tld.suffix}', now, 1)
@@ -31,6 +31,6 @@ class StatsManager:
 
     async def record_success(self, tld):
         async with await self.redis.pipeline() as pipe:
-            pipe.incr(SUCCESS)
-            pipe.incr(f'{SUCCESS_TLD}{tld.domain}.{tld.suffix}')
+            await pipe.incr(SUCCESS)
+            await pipe.incr(f'{SUCCESS_TLD}{tld.domain}.{tld.suffix}')
             await pipe.execute()
