@@ -9,7 +9,6 @@ import worker.stats_reporting as stats
 from functools import partial
 from io import BytesIO
 from PIL import Image, UnidentifiedImageError
-from worker.stats_reporting import register_error
 
 
 def kafka_connect():
@@ -60,13 +59,13 @@ async def process_image(persister, session, url, identifier, semaphore, redis=No
         loop = asyncio.get_event_loop()
         img_resp = await session.get(url)
         if img_resp.status >= 400:
-            await stats.register_error(redis, tld)
+            await stats.record_error(redis, tld)
             return
         buffer = BytesIO(await img_resp.read())
         try:
             img = await loop.run_in_executor(None, partial(Image.open, buffer))
         except UnidentifiedImageError:
-            await redis.incr('resize_errors')
+            await stats.record_error(redis, tld)
             return
         thumb = await loop.run_in_executor(
             None, partial(thumbnail_image, img)
@@ -74,5 +73,4 @@ async def process_image(persister, session, url, identifier, semaphore, redis=No
         await loop.run_in_executor(
             None, partial(persister, img=thumb, identifier=identifier)
         )
-        if redis:
-            await redis.incr('successfully_resized')
+        await stats.record_success(redis, tld)

@@ -227,7 +227,7 @@ async def test_pipeline():
         semaphore=asyncio.BoundedSemaphore(),
         redis=redis
     )
-    assert redis.store['successfully_resized'] == 1
+    assert redis.store['num_resized'] == 1
 
 
 @pytest.mark.asyncio
