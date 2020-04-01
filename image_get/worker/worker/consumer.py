@@ -11,6 +11,7 @@ from timeit import default_timer as timer
 from worker.util import kafka_connect, parse_message, save_thumbnail_s3,\
     process_image
 from worker.rate_limit import RateLimitedClientSession
+from worker.stats_reporting import StatsManager
 
 
 def poll_consumer(consumer, batch_size):
@@ -141,10 +142,11 @@ async def setup_consumer():
         aioclient=aiohttp.ClientSession(),
         redis=redis_client
     )
+    stats = StatsManager(redis_client)
     image_processor = partial(
         process_image, session=aiosession,
         persister=partial(save_thumbnail_s3, s3_client=s3),
-        redis=redis_client
+        stats=stats
     )
     return consume(consumer, image_processor)
 

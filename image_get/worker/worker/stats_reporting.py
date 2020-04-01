@@ -6,26 +6,31 @@ ERRS_1hr = 'err1hr:'
 ERRS_12hr = 'err12hr:'
 # Total number of errors in resize tasks
 ERROR_COUNT = 'resize_errors'
-TLD_ERRORS = 'resize_errors_{}'
+# Errors per domain
+TLD_ERRORS = 'resize_errors:'
 
-# Number of successful resizes
+# Total number of successful resizes
 SUCCESS = 'num_resized'
-SUCCESS_TLD = 'num_resized_{}'
+# Successful resizes per domain
+SUCCESS_TLD = 'num_resized:'
 
 
-async def record_error(redis, tld):
-    now = time.monotonic()
-    async with await redis.pipeline() as pipe:
-        pipe.incr(ERROR_COUNT)
-        pipe.incr(TLD_ERRORS.format(tld))
-        pipe.rpush(f'{ERRS_60s}{tld.domain}.{tld.suffix}', now)
-        pipe.rpush(f'{ERRS_1hr}{tld.domain}.{tld.suffix}', now)
-        pipe.rpush(f'{ERRS_12hr}{tld.domain}.{tld.suffix}', now)
-        await pipe.execute()
+class StatsManager:
+    def __init__(self, redis):
+        self.redis = redis
 
+    async def record_error(self, tld):
+        now = time.monotonic()
+        async with await self.redis.pipeline() as pipe:
+            pipe.incr(ERROR_COUNT)
+            pipe.incr(f'{TLD_ERRORS}{tld.domain}.{tld.suffix}')
+            pipe.zadd(f'{ERRS_60s}{tld.domain}.{tld.suffix}', now, 1)
+            pipe.zadd(f'{ERRS_1hr}{tld.domain}.{tld.suffix}', now, 1)
+            pipe.zadd(f'{ERRS_12hr}{tld.domain}.{tld.suffix}', now, 1)
+            await pipe.execute()
 
-async def record_success(redis, tld):
-    async with await redis.pipeline() as pipe:
-        pipe.incr(SUCCESS)
-        pipe.incr(SUCCESS_TLD.format(tld))
-        await pipe.execute()
+    async def record_success(self, tld):
+        async with await self.redis.pipeline() as pipe:
+            pipe.incr(SUCCESS)
+            pipe.incr(f'{SUCCESS_TLD}{tld.domain}.{tld.suffix}')
+            await pipe.execute()

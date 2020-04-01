@@ -5,6 +5,7 @@ import time
 import random
 import logging as log
 from worker.consumer import poll_consumer, consume
+from worker.stats_reporting import StatsManager
 from worker.util import process_image
 from worker.rate_limit import RateLimitedClientSession
 from PIL import Image
@@ -74,6 +75,9 @@ class FakeRedisPipeline:
     def incr(self, key):
         self.todo.append(partial(self.redis.incr, key))
 
+    def zadd(self, key, score, value):
+        self.todo.append(partial(self.redis.zadd, key, score, value))
+
     async def __aexit__(self, exc_type, exc, tb):
         pass
 
@@ -110,6 +114,11 @@ class FakeRedis:
         else:
             self.store[key] = 1
         return self.store[key]
+
+    async def zadd(self, key, score, value):
+        if key not in self.store:
+            self.store[key] = []
+        self.store[key].append((score, value))
 
     async def pipeline(self):
         return FakeRedisPipeline(self)
@@ -219,13 +228,14 @@ async def test_pipeline():
     """ Test that the image processor completes with a fake image. """
     # validate_thumbnail callback performs the actual assertions
     redis = FakeRedis()
+    stats = StatsManager(redis)
     await process_image(
         persister=validate_thumbnail,
         session=FakeAioSession(),
         url='fake_url',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
         semaphore=asyncio.BoundedSemaphore(),
-        redis=redis
+        stats=stats
     )
     assert redis.store['num_resized'] == 1
 
@@ -233,13 +243,14 @@ async def test_pipeline():
 @pytest.mark.asyncio
 async def test_handles_corrupt_images_gracefully():
     redis = FakeRedis()
+    stats = StatsManager(redis)
     await process_image(
         persister=validate_thumbnail,
         session=FakeAioSession(corrupt=True),
         url='fake_url',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
         semaphore=asyncio.BoundedSemaphore(),
-        redis=redis
+        stats=stats
     )
 
 
@@ -275,11 +286,11 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
         ),
         redis=redis
     )
-
+    stats = StatsManager(redis)
     image_processor = partial(
         process_image, session=aiosession,
         persister=validate_thumbnail,
-        redis=redis
+        stats=stats
     )
     return consume(consumer, image_processor, terminate=True)
 

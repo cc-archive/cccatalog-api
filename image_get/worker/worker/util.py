@@ -5,7 +5,7 @@ import time
 import pykafka
 import tldextract
 import worker.settings as settings
-import worker.stats_reporting as stats
+from worker.stats_reporting import StatsManager
 from functools import partial
 from io import BytesIO
 from PIL import Image, UnidentifiedImageError
@@ -42,10 +42,10 @@ def save_thumbnail_s3(s3_client, img: BytesIO, identifier):
     )
 
 
-async def process_image(persister, session, url, identifier, semaphore, redis=None):
+async def process_image(persister, session, url, identifier, semaphore, stats: StatsManager):
     """
     Get an image, resize it, and persist it.
-    :param redis: If included, record successfully resized images here.
+    :param stats: A StatsManager for recording task statuses.
     :param semaphore: A shared semaphore limiting concurrent execution.
     :param identifier: Our identifier for the image at the URL.
     :param persister: The function defining image persistence. It
@@ -59,13 +59,13 @@ async def process_image(persister, session, url, identifier, semaphore, redis=No
         loop = asyncio.get_event_loop()
         img_resp = await session.get(url)
         if img_resp.status >= 400:
-            await stats.record_error(redis, tld)
+            await stats.record_error(tld)
             return
         buffer = BytesIO(await img_resp.read())
         try:
             img = await loop.run_in_executor(None, partial(Image.open, buffer))
         except UnidentifiedImageError:
-            await stats.record_error(redis, tld)
+            await stats.record_error(tld)
             return
         thumb = await loop.run_in_executor(
             None, partial(thumbnail_image, img)
@@ -73,4 +73,4 @@ async def process_image(persister, session, url, identifier, semaphore, redis=No
         await loop.run_in_executor(
             None, partial(persister, img=thumb, identifier=identifier)
         )
-        await stats.record_success(redis, tld)
+        await stats.record_success(tld)
