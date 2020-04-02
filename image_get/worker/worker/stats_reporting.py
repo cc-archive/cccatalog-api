@@ -51,6 +51,14 @@ class StatsManager:
     def __init__(self, redis):
         self.redis = redis
 
+    @staticmethod
+    async def _record_window_samples(pipe, domain, success):
+        now = time.monotonic()
+        for stat_key, interval in WINDOW_PAIRS:
+            key = f'{stat_key}{domain}'
+            await pipe.zadd(key, now, success)
+            await pipe.zremrangebyscore(key, '-inf', now - interval)
+
     async def record_error(self, tld, code=None, affect_rate_limiting=True):
         """
 
@@ -60,7 +68,6 @@ class StatsManager:
         limiting algorithm. Some errors are not indicative of server load and
         should be excluded.
         """
-        now = time.monotonic()
         domain = f'{tld.domain}.{tld.suffix}'
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(ERROR_COUNT)
@@ -68,20 +75,13 @@ class StatsManager:
             if code:
                 await pipe.incr(f'{TLD_ERRORS}{domain}:{code}')
             if affect_rate_limiting:
-                for stat_key, interval in WINDOW_PAIRS:
-                    key = f'{stat_key}{domain}'
-                    await pipe.zadd(key, now, FAIL)
-                    await pipe.zremrangebyscore(key, '-inf', now - interval)
+                await self._record_window_samples(pipe, domain, FAIL)
             await pipe.execute()
 
     async def record_success(self, tld):
-        now = time.monotonic()
         domain = f'{tld.domain}.{tld.suffix}'
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(SUCCESS_COUNT)
             await pipe.incr(f'{TLD_SUCCESS}{domain}')
-            for stat_key, interval in WINDOW_PAIRS:
-                key = f'{stat_key}{domain}'
-                await pipe.zadd(key, now, SUCCESS)
-                await pipe.zremrangebyscore(key, '-inf', now - interval)
+            await self._record_window_samples(self, pipe, domain, SUCCESS)
             await pipe.execute()
