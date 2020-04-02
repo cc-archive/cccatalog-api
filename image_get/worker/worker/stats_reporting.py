@@ -59,7 +59,7 @@ class StatsManager:
             await pipe.zadd(key, now, success)
             await pipe.zremrangebyscore(key, '-inf', now - interval)
 
-    async def record_error(self, tld, code=None, affect_rate_limiting=True):
+    async def record_error(self, tld, code=None):
         """
         :param tld: The domain key for the associated URL.
         :param code: An optional status code.
@@ -71,8 +71,11 @@ class StatsManager:
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(ERROR_COUNT)
             await pipe.incr(f'{TLD_ERRORS}{domain}')
+            affect_rate_limiting = True
             if code:
                 await pipe.incr(f'{TLD_ERRORS}{domain}:{code}')
+                if code == 404 or code == 'UnidentifiedImageError':
+                    affect_rate_limiting = False
             if affect_rate_limiting:
                 await self._record_window_samples(pipe, domain, FAILED)
             await pipe.execute()

@@ -67,8 +67,7 @@ async def process_image(persister, session, url, identifier, semaphore, stats: S
         except UnidentifiedImageError:
             await stats.record_error(
                 tld,
-                code="UnidentifiedImageError",
-                affect_rate_limiting=False
+                code="UnidentifiedImageError"
             )
             return
         thumb = await loop.run_in_executor(
