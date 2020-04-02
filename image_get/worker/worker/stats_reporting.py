@@ -43,8 +43,8 @@ TLD_ERRORS = 'resize_errors:'
 SUCCESS_COUNT = 'num_resized'
 TLD_SUCCESS = 'num_resized:'
 
-SUCCESS = 1
-FAIL = 0
+SUCCEEDED = 1
+FAILED = 0
 
 
 class StatsManager:
@@ -61,7 +61,6 @@ class StatsManager:
 
     async def record_error(self, tld, code=None, affect_rate_limiting=True):
         """
-
         :param tld: The domain key for the associated URL.
         :param code: An optional status code.
         :param affect_rate_limiting: Whether the error should impact the rate
@@ -75,7 +74,7 @@ class StatsManager:
             if code:
                 await pipe.incr(f'{TLD_ERRORS}{domain}:{code}')
             if affect_rate_limiting:
-                await self._record_window_samples(pipe, domain, FAIL)
+                await self._record_window_samples(pipe, domain, FAILED)
             await pipe.execute()
 
     async def record_success(self, tld):
@@ -83,5 +82,5 @@ class StatsManager:
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(SUCCESS_COUNT)
             await pipe.incr(f'{TLD_SUCCESS}{domain}')
-            await self._record_window_samples(pipe, domain, SUCCESS)
+            await self._record_window_samples(pipe, domain, SUCCEEDED)
             await pipe.execute()

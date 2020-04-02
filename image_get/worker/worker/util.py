@@ -59,17 +59,17 @@ async def process_image(persister, session, url, identifier, semaphore, stats: S
         loop = asyncio.get_event_loop()
         img_resp = await session.get(url)
         if img_resp.status >= 400:
-            await stats.record_error(
-                tld,
-                code=img_resp.status,
-                affect_rate_limiting=False
-            )
+            await stats.record_error(tld, code=img_resp.status)
             return
         buffer = BytesIO(await img_resp.read())
         try:
             img = await loop.run_in_executor(None, partial(Image.open, buffer))
         except UnidentifiedImageError:
-            await stats.record_error(tld, code="UnidentifiedImageError")
+            await stats.record_error(
+                tld,
+                code="UnidentifiedImageError",
+                affect_rate_limiting=False
+            )
             return
         thumb = await loop.run_in_executor(
             None, partial(thumbnail_image, img)
