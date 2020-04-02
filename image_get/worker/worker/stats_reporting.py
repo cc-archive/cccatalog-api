@@ -1,6 +1,26 @@
 import time
 
-# Track errors that occurred in the last N {seconds | hours}
+
+"""
+Reports the status of image processing jobs by publishing statistics to Redis.
+
+Description of keys:
+
+err60s:{domain} - Number of errors that occurred in the last 60 seconds
+err1hr:{domain} - Number of errors that occurred in the last hour
+err12hr:{domain} - Number of errors that occurred in the last 12 hours
+
+resize_errors - Number of errors that have occurred across all domains
+resize_errors:{domain} - Number of errors that have occurred for a domain
+
+num_resized - Number of successfully resized images
+num_resized:{domain} - Number of successfully resized images for a domain
+
+Domains are formatted as the TLD and suffix.
+Valid example: err60s:staticflickr.com
+Invalid example: err60s:https://staticflickr.com
+"""
+
 ERRS_60s = 'err60s:'
 ERRS_1hr = 'err1hr:'
 ERRS_12hr = 'err12hr:'
@@ -8,22 +28,17 @@ ONE_MINUTE = 60
 ONE_HOUR = ONE_MINUTE * 60
 TWELVE_HOURS = ONE_HOUR * 12
 
-# Total number of errors in resize tasks
-ERROR_COUNT = 'resize_errors'
-# Errors per domain
-TLD_ERRORS = 'resize_errors:'
-
-# Total number of successful resizes
-SUCCESS = 'num_resized'
-# Successful resizes per domain
-SUCCESS_TLD = 'num_resized:'
-
-# Pair error window keys with intervals
 WINDOW_PAIRS = [
     (ERRS_60s, ONE_MINUTE),
     (ERRS_1hr, ONE_HOUR),
     (ERRS_12hr, TWELVE_HOURS)
 ]
+
+ERROR_COUNT = 'resize_errors'
+TLD_ERRORS = 'resize_errors:'
+
+SUCCESS = 'num_resized'
+SUCCESS_TLD = 'num_resized:'
 
 
 class StatsManager:
