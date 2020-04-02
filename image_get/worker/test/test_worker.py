@@ -128,7 +128,6 @@ class FakeRedis:
         start = float(start)
         end = float(end)
         delete_idxs = []
-        log.info(f'{self.store[key]}')
         for idx, tup in enumerate(self.store[key]):
             score, f = tup
             if start < score < end:
@@ -248,13 +247,14 @@ async def test_pipeline():
     await process_image(
         persister=validate_thumbnail,
         session=FakeAioSession(),
-        url='fake_url',
+        url='https://example.gov/hello.jpg',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
         semaphore=asyncio.BoundedSemaphore(),
         stats=stats
     )
     log.debug(f'store: {redis.store}')
     assert redis.store['num_resized'] == 1
+    assert redis.store['num_resized:example.gov'] == 1
 
 
 @pytest.mark.asyncio

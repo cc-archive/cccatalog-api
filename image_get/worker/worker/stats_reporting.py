@@ -1,6 +1,4 @@
 import time
-
-
 """
 Reports the status of image processing jobs by publishing statistics to Redis.
 
@@ -24,6 +22,8 @@ Invalid example: err60s:https://staticflickr.com
 ERRS_60s = 'err60s:'
 ERRS_1hr = 'err1hr:'
 ERRS_12hr = 'err12hr:'
+
+# Window intervals in seconds
 ONE_MINUTE = 60
 ONE_HOUR = ONE_MINUTE * 60
 TWELVE_HOURS = ONE_HOUR * 12
