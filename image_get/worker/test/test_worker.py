@@ -79,8 +79,8 @@ class FakeRedisPipeline:
     async def zadd(self, key, score, value):
         self.todo.append(partial(self.redis.zadd, key, score, value))
 
-    async def zrembyscore(self, key, start, end):
-        self.todo.append(partial(self.redis.zrangebyscore, key, start, end))
+    async def zremrangebyscore(self, key, start, end):
+        self.todo.append(partial(self.redis.zremrangebyscore, key, start, end))
 
     async def __aexit__(self, exc_type, exc, tb):
         return self
@@ -123,13 +123,14 @@ class FakeRedis:
             self.store[key] = []
         self.store[key].append((score, value))
 
-    async def zrembyscore(self, key, start, end):
+    async def zremrangebyscore(self, key, start, end):
         # inefficiency tolerated because this is a mock
         start = float(start)
         end = float(end)
         delete_idxs = []
-        for idx, tup in self.store[key]:
-            score, _ = tup
+        log.info(f'{self.store[key]}')
+        for idx, tup in enumerate(self.store[key]):
+            score, f = tup
             if start < score < end:
                 delete_idxs.append(idx)
         for idx in reversed(delete_idxs):
@@ -268,6 +269,31 @@ async def test_handles_corrupt_images_gracefully():
         semaphore=asyncio.BoundedSemaphore(),
         stats=stats
     )
+
+
+@pytest.mark.asyncio
+async def test_records_errors():
+    redis = FakeRedis()
+    stats = StatsManager(redis)
+    session = FakeAioSession(status=403)
+    await process_image(
+        persister=validate_thumbnail,
+        session=session,
+        url='https://example.gov/image.jpg',
+        identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
+        semaphore=asyncio.BoundedSemaphore(),
+        stats=stats
+    )
+    expected_keys = [
+        'resize_errors',
+        'resize_errors:example.gov',
+        'resize_errors:example.gov:403',
+        'err60s:example.gov',
+        'err1hr:example.gov',
+        'err12hr:example.gov'
+    ]
+    for key in expected_keys:
+        assert key in redis.store
 
 
 async def _replenish_tokens_10rps(redis):
