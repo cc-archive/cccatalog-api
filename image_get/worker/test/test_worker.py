@@ -123,6 +123,11 @@ class FakeRedis:
             self.store[key] = []
         self.store[key].append((score, value))
 
+    async def sadd(self, key, value):
+        if key not in self.store:
+            self.store[key] = set()
+        self.store[key].add(value)
+
     async def zremrangebyscore(self, key, start, end):
         # inefficiency tolerated because this is a mock
         start = float(start)

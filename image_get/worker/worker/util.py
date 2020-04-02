@@ -55,8 +55,10 @@ async def process_image(persister, session, url, identifier, semaphore, stats: S
     :param url: The URL of the image.
     """
     async with semaphore:
-        tld = tldextract.extract(url)
         loop = asyncio.get_event_loop()
+        tld = tldextract.extract(url)
+        domain = f'{tld.domain}.{tld.suffix}'
+        await stats.update_tlds(domain)
         img_resp = await session.get(url)
         if img_resp.status >= 400:
             await stats.record_error(tld, code=img_resp.status)
@@ -77,3 +79,29 @@ async def process_image(persister, session, url, identifier, semaphore, stats: S
             None, partial(persister, img=thumb, identifier=identifier)
         )
         await stats.record_success(tld)
+
+
+async def monitor_task_list(tasks):
+    # For computing average requests per second
+    num_samples = 0
+    resize_rate_sum = 0
+
+    last_time = time.monotonic()
+    last_count = 0
+    while True:
+        now = time.monotonic()
+        num_completed = sum([t.done() for t in tasks])
+        task_delta = num_completed - last_count
+        time_delta = now - last_time
+        resize_rate = task_delta / time_delta
+
+        last_time = now
+        last_count = num_completed
+        if resize_rate > 0:
+            resize_rate_sum += resize_rate
+            num_samples += 1
+            mean = resize_rate_sum / num_samples
+            log.info(f'resize_rate_1s={round(resize_rate, 2)}/s, '
+                     f'avg_resize_rate={round(mean, 2)}/s, '
+                     f'num_completed={num_completed}')
+        await asyncio.sleep(1)

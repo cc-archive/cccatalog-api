@@ -17,6 +17,10 @@ resize_errors:{domain} - Number of errors that have occurred for a domain
 num_resized - Number of successfully resized images
 num_resized:{domain} - Number of successfully resized images for a domain
 
+known_tlds - A set listing every TLD workers have encountered. The crawl 
+monitor uses this set to determine which domains need to be watched. It will
+not be possible to make requests to domains that are not in this list.
+
 Domains are formatted as the TLD and suffix.
 Valid example: status60s:staticflickr.com
 Invalid example: status60s:https://staticflickr.com
@@ -46,26 +50,28 @@ TLD_SUCCESS = 'num_resized:'
 SUCCEEDED = 1
 FAILED = 0
 
+KNOWN_TLDS = 'known_tlds'
+
 
 class StatsManager:
     def __init__(self, redis):
         self.redis = redis
+        self.known_tlds = set()
 
     @staticmethod
     async def _record_window_samples(pipe, domain, success):
+        """ Insert a status into all sliding windows. """
         now = time.monotonic()
         for stat_key, interval in WINDOW_PAIRS:
             key = f'{stat_key}{domain}'
             await pipe.zadd(key, now, success)
+            # Delete events from outside the window
             await pipe.zremrangebyscore(key, '-inf', now - interval)
 
     async def record_error(self, tld, code=None):
         """
         :param tld: The domain key for the associated URL.
         :param code: An optional status code.
-        :param affect_rate_limiting: Whether the error should impact the rate
-        limiting algorithm. Some errors are not indicative of server load and
-        should be excluded.
         """
         domain = f'{tld.domain}.{tld.suffix}'
         async with await self.redis.pipeline() as pipe:
@@ -87,3 +93,11 @@ class StatsManager:
             await pipe.incr(f'{TLD_SUCCESS}{domain}')
             await self._record_window_samples(pipe, domain, SUCCEEDED)
             await pipe.execute()
+
+    async def update_tlds(self, tld):
+        """
+        If a TLD hasn't been seen before, add it to the set in Redis.
+        """
+        if tld not in self.known_tlds:
+            self.known_tlds.add(tld)
+            await self.redis.sadd(KNOWN_TLDS, tld)
