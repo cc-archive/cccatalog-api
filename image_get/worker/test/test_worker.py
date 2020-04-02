@@ -254,6 +254,7 @@ async def test_pipeline():
     )
     assert redis.store['num_resized'] == 1
     assert redis.store['num_resized:example.gov'] == 1
+    assert len(redis.store['status60s:example.gov']) == 1
 
 
 @pytest.mark.asyncio
@@ -287,9 +288,9 @@ async def test_records_errors():
         'resize_errors',
         'resize_errors:example.gov',
         'resize_errors:example.gov:403',
-        'err60s:example.gov',
-        'err1hr:example.gov',
-        'err12hr:example.gov'
+        'status60s:example.gov',
+        'status1hr:example.gov',
+        'status12hr:example.gov'
     ]
     for key in expected_keys:
         val = redis.store[key]

@@ -17,7 +17,7 @@ msgs = [
         'uuid': '3989f25b-21f7-4fce-874f-8a2a6f956a1d'
     },
     {
-        'url': 'https://farm9.staticflickr.com/8116/8x06654389_e56c706e2c_b.jpg',
+        'url': 'https://farm9.staticflickr.com/8116/8606654389_e56c706e2c_b.jpg',
         'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca'
     }
 ]
