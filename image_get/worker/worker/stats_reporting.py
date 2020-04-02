@@ -10,8 +10,8 @@ status60s:{domain} - Events that occurred in the last 60 seconds
 status1hr:{domain} - Events that occurred in the last hour
 status12hr:{domain} - Events that occurred in the last 12 hours
 
-We also want to know the overall progress of the crawl and have a general 
-idea of which domains are causing problems:
+We also want to know the overall progress of the crawl and have a general
+idea of which domains are having problems:
 resize_errors - Number of errors that have occurred across all domains
 resize_errors:{domain} - Number of errors that have occurred for a domain
 num_resized - Number of successfully resized images
@@ -51,7 +51,15 @@ class StatsManager:
     def __init__(self, redis):
         self.redis = redis
 
-    async def record_error(self, tld, code=None):
+    async def record_error(self, tld, code=None, affect_rate_limiting=True):
+        """
+
+        :param tld: The domain key for the associated URL.
+        :param code: An optional status code.
+        :param affect_rate_limiting: Whether the error should impact the rate
+        limiting algorithm. Some errors are not indicative of server load and
+        should be excluded.
+        """
         now = time.monotonic()
         domain = f'{tld.domain}.{tld.suffix}'
         async with await self.redis.pipeline() as pipe:
@@ -59,10 +67,11 @@ class StatsManager:
             await pipe.incr(f'{TLD_ERRORS}{domain}')
             if code:
                 await pipe.incr(f'{TLD_ERRORS}{domain}:{code}')
-            for stat_key, interval in WINDOW_PAIRS:
-                key = f'{stat_key}{domain}'
-                await pipe.zadd(key, now, FAIL)
-                await pipe.zremrangebyscore(key, '-inf', now - interval)
+            if affect_rate_limiting:
+                for stat_key, interval in WINDOW_PAIRS:
+                    key = f'{stat_key}{domain}'
+                    await pipe.zadd(key, now, FAIL)
+                    await pipe.zremrangebyscore(key, '-inf', now - interval)
             await pipe.execute()
 
     async def record_success(self, tld):
