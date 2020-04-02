@@ -252,7 +252,6 @@ async def test_pipeline():
         semaphore=asyncio.BoundedSemaphore(),
         stats=stats
     )
-    log.debug(f'store: {redis.store}')
     assert redis.store['num_resized'] == 1
     assert redis.store['num_resized:example.gov'] == 1
 
@@ -293,7 +292,8 @@ async def test_records_errors():
         'err12hr:example.gov'
     ]
     for key in expected_keys:
-        assert key in redis.store
+        val = redis.store[key]
+        assert val == 1 or len(val) == 1
 
 
 async def _replenish_tokens_10rps(redis):
