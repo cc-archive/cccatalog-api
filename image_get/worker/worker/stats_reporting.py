@@ -83,5 +83,5 @@ class StatsManager:
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(SUCCESS_COUNT)
             await pipe.incr(f'{TLD_SUCCESS}{domain}')
-            await self._record_window_samples(self, pipe, domain, SUCCESS)
+            await self._record_window_samples(pipe, domain, SUCCESS)
             await pipe.execute()
