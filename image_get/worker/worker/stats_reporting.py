@@ -49,9 +49,6 @@ TLD_ERRORS = 'resize_errors:'
 SUCCESS_COUNT = 'num_resized'
 TLD_SUCCESS = 'num_resized:'
 
-SUCCEEDED = 1
-FAILED = 0
-
 KNOWN_TLDS = 'known_tlds'
 
 
@@ -61,22 +58,20 @@ class StatsManager:
         self.known_tlds = set()
 
     @staticmethod
-    async def _record_window_samples(pipe, domain, success):
+    async def _record_window_samples(pipe, domain, status):
         """ Insert a status into all sliding windows. """
         now = time.monotonic()
+        # Time-based sliding windows
         for stat_key, interval in WINDOW_PAIRS:
             key = f'{stat_key}{domain}'
-            await pipe.zadd(key, now, success)
+            await pipe.zadd(key, now, status)
             # Delete events from outside the window
             await pipe.zremrangebyscore(key, '-inf', now - interval)
-
-    @staticmethod
-    async def _record_last_50_requests_sample(pipe, domain, status):
-        """ Insert a status into the list holding the last 50 requests."""
+        # "Last n requests" window
         await pipe.rpush(f'{LAST_50_REQUESTS}{domain}', status)
         await pipe.ltrim(f'{LAST_50_REQUESTS}{domain}', -50, -1)
 
-    async def record_error(self, tld, code=None):
+    async def record_error(self, tld, code):
         """
         :param tld: The domain key for the associated URL.
         :param code: An optional status code.
@@ -86,12 +81,8 @@ class StatsManager:
             await pipe.incr(ERROR_COUNT)
             await pipe.incr(f'{TLD_ERRORS}{domain}')
             affect_rate_limiting = True
-            if code:
-                await pipe.incr(f'{TLD_ERRORS}{domain}:{code}')
-                if code == 404 or code == 'UnidentifiedImageError':
-                    affect_rate_limiting = False
-            if affect_rate_limiting:
-                await self._record_window_samples(pipe, domain, FAILED)
+            await pipe.incr(f'{TLD_ERRORS}{domain}:{code}')
+            await self._record_window_samples(pipe, domain, code)
             await pipe.execute()
 
     async def record_success(self, tld):
@@ -99,7 +90,7 @@ class StatsManager:
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(SUCCESS_COUNT)
             await pipe.incr(f'{TLD_SUCCESS}{domain}')
-            await self._record_window_samples(pipe, domain, SUCCEEDED)
+            await self._record_window_samples(pipe, domain, status=200)
             await pipe.execute()
 
     async def update_tlds(self, tld):
