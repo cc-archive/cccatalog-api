@@ -30,6 +30,8 @@ STATUS_60s = 'status60s:'
 STATUS_1HR = 'status1hr:'
 STATUS_12HR = 'status12hr:'
 
+LAST_50_REQUESTS = 'statuslast50req:'
+
 # Window intervals in seconds
 ONE_MINUTE = 60
 ONE_HOUR = ONE_MINUTE * 60
@@ -67,6 +69,12 @@ class StatsManager:
             await pipe.zadd(key, now, success)
             # Delete events from outside the window
             await pipe.zremrangebyscore(key, '-inf', now - interval)
+
+    @staticmethod
+    async def _record_last_50_requests_sample(pipe, domain, status):
+        """ Insert a status into the list holding the last 50 requests."""
+        await pipe.rpush(f'{LAST_50_REQUESTS}{domain}', status)
+        await pipe.ltrim(f'{LAST_50_REQUESTS}{domain}', -50, -1)
 
     async def record_error(self, tld, code=None):
         """

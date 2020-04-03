@@ -73,6 +73,9 @@ class FakeRedisPipeline:
     async def rpush(self, key, value):
         self.todo.append(partial(self.redis.rpush, key, value))
 
+    async def ltrim(self, key, start, end):
+        self.todo.append(partial(self.redis.ltrim, start, end))
+
     async def incr(self, key):
         self.todo.append(partial(self.redis.incr, key))
 
@@ -127,6 +130,9 @@ class FakeRedis:
         if key not in self.store:
             self.store[key] = set()
         self.store[key].add(value)
+
+    async def ltrim(self, key, start, end):
+        pass
 
     async def zremrangebyscore(self, key, start, end):
         # inefficiency tolerated because this is a mock
