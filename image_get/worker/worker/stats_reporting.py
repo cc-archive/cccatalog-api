@@ -9,6 +9,7 @@ These are tracked through window functions:
 status60s:{domain} - Events that occurred in the last 60 seconds
 status1hr:{domain} - Events that occurred in the last hour
 status12hr:{domain} - Events that occurred in the last 12 hours
+statuslast50req:{domain} - The last 50 events over any time interval.
 
 We also want to know the overall progress of the crawl and have a general
 idea of which domains are having problems:
@@ -29,7 +30,6 @@ Invalid example: status60s:https://staticflickr.com
 STATUS_60s = 'status60s:'
 STATUS_1HR = 'status1hr:'
 STATUS_12HR = 'status12hr:'
-
 LAST_50_REQUESTS = 'statuslast50req:'
 
 # Window intervals in seconds
@@ -80,7 +80,6 @@ class StatsManager:
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(ERROR_COUNT)
             await pipe.incr(f'{TLD_ERRORS}{domain}')
-            affect_rate_limiting = True
             await pipe.incr(f'{TLD_ERRORS}{domain}:{code}')
             await self._record_window_samples(pipe, domain, code)
             await pipe.execute()

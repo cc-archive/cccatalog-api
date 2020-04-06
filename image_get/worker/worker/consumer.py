@@ -133,4 +133,4 @@ async def listen():
 
 if __name__ == '__main__':
     log.basicConfig(level=log.INFO)
-    asyncio.run(listen(), debug=True)
+    asyncio.run(listen())

@@ -1,4 +1,5 @@
 import json
+import logging as log
 from pykafka import KafkaClient
 from itertools import cycle, islice
 
@@ -26,6 +27,12 @@ encoded_msgs = [json.dumps(msg) for msg in msgs]
 
 client = KafkaClient(hosts='kafka:9092')
 topic = client.topics['inbound_images']
+
+num_messages = 5000000
+counter = 0
 with topic.get_sync_producer() as producer:
-    for msg in islice(cycle(encoded_msgs), 5000):
+    for msg in islice(cycle(encoded_msgs), num_messages):
         producer.produce(bytes(msg, 'utf-8'))
+        counter += 1
+        if counter % 100000 == 0:
+            print(f'{counter}/{num_messages}')
