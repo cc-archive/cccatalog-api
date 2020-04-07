@@ -42,7 +42,7 @@ def save_thumbnail_s3(s3_client, img: BytesIO, identifier):
     )
 
 
-async def process_image(persister, session, url, identifier, semaphore, stats: StatsManager):
+async def process_image(persister, session, url, identifier, stats: StatsManager):
     """
     Get an image, resize it, and persist it.
     :param stats: A StatsManager for recording task statuses.
@@ -54,31 +54,30 @@ async def process_image(persister, session, url, identifier, semaphore, stats: S
     :param session: An aiohttp client session.
     :param url: The URL of the image.
     """
-    async with semaphore:
-        loop = asyncio.get_event_loop()
-        tld = tldextract.extract(url)
-        domain = f'{tld.domain}.{tld.suffix}'
-        await stats.update_tlds(domain)
-        img_resp = await session.get(url)
-        if img_resp.status >= 400:
-            await stats.record_error(tld, code=img_resp.status)
-            return
-        buffer = BytesIO(await img_resp.read())
-        try:
-            img = await loop.run_in_executor(None, partial(Image.open, buffer))
-        except UnidentifiedImageError:
-            await stats.record_error(
-                tld,
-                code="UnidentifiedImageError"
-            )
-            return
-        thumb = await loop.run_in_executor(
-            None, partial(thumbnail_image, img)
+    loop = asyncio.get_event_loop()
+    tld = tldextract.extract(url)
+    domain = f'{tld.domain}.{tld.suffix}'
+    await stats.update_tlds(domain)
+    img_resp = await session.get(url)
+    if img_resp.status >= 400:
+        await stats.record_error(tld, code=img_resp.status)
+        return
+    buffer = BytesIO(await img_resp.read())
+    try:
+        img = await loop.run_in_executor(None, partial(Image.open, buffer))
+    except UnidentifiedImageError:
+        await stats.record_error(
+            tld,
+            code="UnidentifiedImageError"
         )
-        await loop.run_in_executor(
-            None, partial(persister, img=thumb, identifier=identifier)
-        )
-        await stats.record_success(tld)
+        return
+    thumb = await loop.run_in_executor(
+        None, partial(thumbnail_image, img)
+    )
+    await loop.run_in_executor(
+        None, partial(persister, img=thumb, identifier=identifier)
+    )
+    await stats.record_success(tld)
 
 
 async def monitor_task_list(tasks):

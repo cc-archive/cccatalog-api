@@ -260,7 +260,6 @@ async def test_pipeline():
         session=FakeAioSession(),
         url='https://example.gov/hello.jpg',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-        semaphore=asyncio.BoundedSemaphore(),
         stats=stats
     )
     assert redis.store['num_resized'] == 1
@@ -277,7 +276,6 @@ async def test_handles_corrupt_images_gracefully():
         session=FakeAioSession(corrupt=True),
         url='fake_url',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-        semaphore=asyncio.BoundedSemaphore(),
         stats=stats
     )
 
@@ -292,7 +290,6 @@ async def test_records_errors():
         session=session,
         url='https://example.gov/image.jpg',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-        semaphore=asyncio.BoundedSemaphore(),
         stats=stats
     )
     expected_keys = [

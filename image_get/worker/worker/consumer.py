@@ -62,11 +62,11 @@ async def consume(consumer, image_processor, terminate=False):
                 batch_size = len(messages)
                 total += batch_size
                 for msg in messages:
+                    await semaphore.acquire()
                     t = asyncio.create_task(
                        image_processor(
                            url=msg['url'],
                            identifier=msg['uuid'],
-                           semaphore=semaphore
                        )
                     )
                     scheduled.append(t)
