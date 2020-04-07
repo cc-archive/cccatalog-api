@@ -66,7 +66,7 @@ async def consume(consumer, image_processor, terminate=False):
                     t = asyncio.create_task(
                        image_processor(
                            url=msg['url'],
-                           identifier=msg['uuid'],
+                           identifier=msg['uuid']
                        )
                     )
                     scheduled.append(t)
