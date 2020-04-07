@@ -98,6 +98,7 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
                 elif replenish_later[source] > now:
                     continue
                 else:
+                    del replenish_later[source]
                     await redis.set(token_key, 1)
                     continue
             await redis.set(token_key, rate)
