@@ -26,8 +26,7 @@ HALTED_SET = 'halted'
 
 def compute_crawl_rate(crawl_size):
     """
-    Set crawl rate in proportion to the size (number of items) hosted by a
-    domain.
+    Set crawl rate in proportion to the size of a source.
 
     :param crawl_size: The size (in terms of pages/images) of the domain
     :return: The requests per second to crawl
@@ -77,17 +76,30 @@ async def get_overrides(sources, redis):
     return overrides
 
 
-async def replenish_tokens(rates: dict, redis):
+async def replenish_tokens(replenish_later, rates: dict, redis):
     """
     Replenish the token bucket for each domain in the `rates`
     dictionary.
-
+    :param replenish_later: A dictionary used to determine when we need
+    to replenish sub-1rps token buckets.
     :param rates: A dictionary mapping a source name to its rate limit.
     :param redis: A redis instance
     """
+    now = time.monotonic()
     with redis.pipeline() as pipe:
         for source, rate in rates.items():
             token_key = f'{CURRTOKEN_PREFIX}{source}'
+            # Rates below 1rps need replenishment deferred due to assorted
+            # implementation details with crawl workers.
+            if rate < 1:
+                if source not in replenish_later:
+                    replenish_later[source] = now + (1 / rate)
+                    continue
+                elif replenish_later[source] > now:
+                    continue
+                else:
+                    await redis.set(token_key, 1)
+                    continue
             await redis.set(token_key, rate)
         await pipe.execute()
 
@@ -108,6 +120,7 @@ async def rate_limit_regulator(session, redis):
     last_override_check = float('-inf')
     override_check_frequency = 30
     rate_limits = {}
+    replenish_later = {}
     while True:
         now = time.monotonic()
 
@@ -125,5 +138,5 @@ async def rate_limit_regulator(session, redis):
             rate_limits.update(overrides)
             last_override_check = now
 
-        await replenish_tokens(rate_limits, redis)
+        await replenish_tokens(replenish_later, rate_limits, redis)
         await asyncio.sleep(1)
