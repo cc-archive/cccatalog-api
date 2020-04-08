@@ -44,7 +44,7 @@ def compute_crawl_rate(crawl_size):
     return min(MAX_CRAWL_RPS, crawl_rate)
 
 
-async def get_crawl_sizes(session: ClientSession):
+async def recompute_crawl_rates(session: ClientSession):
     """
     Query our API to find out how many items each source has. The idea is that
     sources with more content have better capabilities to handle heavy request
@@ -53,12 +53,20 @@ async def get_crawl_sizes(session: ClientSession):
     log.info('Updating crawl rate')
     endpoint = 'https://api.creativecommons.engineering/v1/sources'
     results = await session.get(endpoint)
+    if results.status != 200:
+        log.error(
+            'Failed to update crawl sizes: could not reach CC Catalog API.'
+        )
+        return None
     sources = await results.json()
     crawl_rates = {}
     for src in sources:
-        source_name = src['source_name']
+        source_name = src['source_name'].lower()
         size = src['image_count']
-        crawl_rates[source_name] = compute_crawl_rate(size)
+        rate = compute_crawl_rate(size)
+        crawl_rates[source_name] = rate
+        crawl_days = (size / rate) / 60 / 60 / 24
+        log.debug(f'source, crawl days {source_name}, {crawl_days}')
     return crawl_rates
 
 
@@ -87,15 +95,14 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
     :param redis: A redis instance
     """
     now = time.monotonic()
+    halted = {str(x, 'utf-8') for x in await redis.smembers(HALTED_SET)}
+    log.debug(f'halted: {halted}')
     async with await redis.pipeline() as pipe:
         for source, rate in rates.items():
-            log.info(f'source, crawl rate:'
-                     f' {source},'
-                     f' {rate}')
             token_key = f'{CURRTOKEN_PREFIX}{source}'
             # Rates below 1rps need replenishment deferred due to assorted
             # implementation details with crawl workers.
-            if rate < 1:
+            if 0 < rate < 1:
                 if source not in replenish_later:
                     replenish_later[source] = now + (1 / rate)
                     continue
@@ -104,7 +111,9 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
                 else:
                     del replenish_later[source]
                     await redis.set(token_key, 1)
-                    continue
+                    rate = 1
+            if source in halted:
+                rate = 0
             await redis.set(token_key, rate)
         await pipe.execute()
 
@@ -132,7 +141,9 @@ async def rate_limit_regulator(session, redis):
 
         time_since_crawl_size_check = now - last_crawl_size_check
         if time_since_crawl_size_check > crawl_size_check_frequency:
-            auto_rate_limits = await get_crawl_sizes(session)
+            auto_rate_limits_check = await recompute_crawl_rates(session)
+            if auto_rate_limits_check:
+                auto_rate_limits = auto_rate_limits_check
             overrides = await get_overrides(auto_rate_limits, redis)
             overridden_rate_limits.update(auto_rate_limits)
             overridden_rate_limits.update(overrides)
