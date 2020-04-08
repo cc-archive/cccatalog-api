@@ -99,22 +99,27 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
     log.debug(f'halted: {halted}')
     async with await redis.pipeline() as pipe:
         for source, rate in rates.items():
+            tokens = rate
             token_key = f'{CURRTOKEN_PREFIX}{source}'
+
             # Rates below 1rps need replenishment deferred due to assorted
             # implementation details with crawl workers.
             if 0 < rate < 1:
                 if source not in replenish_later:
                     replenish_later[source] = now + (1 / rate)
-                    continue
+                    tokens = 0
                 elif replenish_later[source] > now:
-                    continue
+                    tokens = 0
                 else:
                     del replenish_later[source]
-                    await redis.set(token_key, 1)
-                    rate = 1
+                    tokens = 1
             if source in halted:
-                rate = 0
-            await redis.set(token_key, rate)
+                tokens = 0
+            log.debug(f'source, ratelimit, tokens:'
+                      f' {source},'
+                      f' {rate},'
+                      f' {tokens}')
+            await redis.set(token_key, tokens)
         await pipe.execute()
 
 
