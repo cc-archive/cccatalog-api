@@ -1,12 +1,11 @@
 import asyncio
 import time
-import json
 import logging as log
 from aiohttp.client import ClientSession
 
 # Crawl sizes below the minimum get the minimum crawl rate.
 # Crawl sizes above the maximum get the maximum crawl rate.
-# Everything inbetween is interpolated between the min and max.
+# Everything between is interpolated.
 HALF_HOUR_SEC = 60 * 30
 MIN_CRAWL_SIZE = 5000
 MAX_CRAWL_SIZE = 500000000
@@ -17,11 +16,27 @@ MAX_CRAWL_RPS = 200
 # Key for token replenishment
 CURRTOKEN_PREFIX = 'currtokens:'
 # The override rate limit for a domain, which takes precedence over all
-# other rate limit settings.
+# other rate limit settings besides error detection.
 OVERRIDE_PREFIX = 'override_rate:'
 
 # Redis set containing all sources which we have halted crawling.
+# Once put into HALTED_SET, an operator must manually remove it
+# before crawling resumes.
 HALTED_SET = 'halted'
+
+# Redis set containing temporarily halted crawl sources. Once error
+# thresholds drop, crawling resumes.
+TEMP_HALTED_SET = 'temp_halted'
+# Crawls get temporarily halted if they exceed this threshold.
+ERROR_TOLERANCE_PERCENT = 10
+# Statuses that we expect to happen frequently that should not
+# trip error thresholds.
+EXPECTED_STATUSES = {
+    '200',
+    '404',
+    '301',
+    'UnidentifiedImageError'
+}
 
 
 def compute_crawl_rate(crawl_size):
@@ -54,8 +69,9 @@ async def recompute_crawl_rates(session: ClientSession):
     endpoint = 'https://api.creativecommons.engineering/v1/sources'
     results = await session.get(endpoint)
     if results.status != 200:
-        log.error(
+        log.warning(
             'Failed to update crawl sizes: could not reach CC Catalog API.'
+            'The last known crawl rates will be used.'
         )
         return None
     sources = await results.json()
@@ -68,6 +84,52 @@ async def recompute_crawl_rates(session: ClientSession):
         crawl_days = (size / rate) / 60 / 60 / 24
         log.debug(f'source, crawl days {source_name}, {crawl_days}')
     return crawl_rates
+
+
+async def check_error_thresholds(sources, redis):
+    """
+    If crawlers are reporting too many errors, halt the crawl.
+    """
+    log.debug('Checking error thresholds')
+    now = time.monotonic()
+    for source in sources:
+        one_minute_window_key = f'status60s:{source}'
+        last_50_statuses_key = f'statuslast50req:{source}'
+        await redis.zremrangebyscore(one_minute_window_key, '-inf', now - 60)
+        one_minute_window = await redis.zrangebyscore(
+            one_minute_window_key, '-inf', 'inf'
+        )
+        last_50_statuses = await redis.lrange(last_50_statuses_key, 0, -1)
+
+        errors = 0
+        successful = 0
+        for status in one_minute_window:
+            status, _ = str(status).split(':')
+            if status not in EXPECTED_STATUSES:
+                errors += 1
+            else:
+                successful += 1
+        tolerance = ERROR_TOLERANCE_PERCENT / 10
+        if len(one_minute_window) > 5:
+            if not successful or errors / successful > tolerance:
+                log.debug(f'{source} tripped temp halt')
+                await redis.sadd(TEMP_HALTED_SET, source)
+        else:
+            await redis.srem(TEMP_HALTED_SET, source)
+
+        if len(last_50_statuses) >= 50:
+            errors = 0
+            successful = 0
+            for status in last_50_statuses:
+                if str(status) not in EXPECTED_STATUSES:
+                    errors += 1
+                else:
+                    successful = 0
+            if not successful:
+                await redis.sadd(HALTED_SET, source)
+                log.warning(f'{source} tripped serious halt;'
+                            f' manual intervention required')
+    log.debug(f'Checked error thresholds in {time.monotonic() - now}')
 
 
 async def get_overrides(sources, redis):
@@ -96,7 +158,11 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
     """
     now = time.monotonic()
     halted = {str(x, 'utf-8') for x in await redis.smembers(HALTED_SET)}
-    log.debug(f'halted: {halted}')
+    temp_halted = \
+        {str(x, 'utf-8') for x in await redis.smembers(TEMP_HALTED_SET)}
+    if halted or temp_halted:
+        log.debug(f'halted: {halted}')
+        log.debug(f'temp_halted: {temp_halted}')
     async with await redis.pipeline() as pipe:
         for source, rate in rates.items():
             tokens = rate
@@ -104,6 +170,7 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
 
             # Rates below 1rps need replenishment deferred due to assorted
             # implementation details with crawl workers.
+            # Todo xxx replace this with a future
             if 0 < rate < 1:
                 if source not in replenish_later:
                     replenish_later[source] = now + (1 / rate)
@@ -113,13 +180,14 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
                 else:
                     del replenish_later[source]
                     tokens = 1
-            if source in halted:
+            if source in halted or source in temp_halted:
                 tokens = 0
             log.debug(f'source, ratelimit, tokens:'
                       f' {source},'
                       f' {rate},'
                       f' {tokens}')
-            await redis.set(token_key, tokens)
+            if tokens:
+                await redis.set(token_key, tokens)
         await pipe.execute()
 
 
@@ -162,5 +230,6 @@ async def rate_limit_regulator(session, redis):
             overridden_rate_limits.update(overrides)
             last_override_check = now
 
+        await check_error_thresholds(overridden_rate_limits, redis)
         await replenish_tokens(replenish_later, overridden_rate_limits, redis)
         await asyncio.sleep(1)
