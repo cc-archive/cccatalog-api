@@ -11,7 +11,7 @@ HALF_HOUR_SEC = 60 * 30
 MIN_CRAWL_SIZE = 5000
 MAX_CRAWL_SIZE = 500000000
 
-MIN_CRAWL_RPS = 0.1
+MIN_CRAWL_RPS = 0.2
 MAX_CRAWL_RPS = 200
 
 # Key for token replenishment
@@ -59,20 +59,21 @@ async def get_crawl_sizes(session: ClientSession):
         source_name = src['source_name']
         size = src['image_count']
         crawl_rates[source_name] = compute_crawl_rate(size)
-
     return crawl_rates
 
 
 async def get_overrides(sources, redis):
     """ Check if any rate limit overrides have been set. """
+    log.debug('Checking overrides')
     sources = list(sources.keys())
-    with redis.pipeline() as pipe:
+    async with await redis.pipeline() as pipe:
         for source in sources:
             await pipe.get(f'{OVERRIDE_PREFIX}{source}')
         res = await pipe.execute()
     overrides = {}
     for idx, source in enumerate(sources):
-        overrides[source] = res[idx]
+        if res[idx]:
+            overrides[source] = float(res[idx])
     return overrides
 
 
@@ -86,8 +87,11 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
     :param redis: A redis instance
     """
     now = time.monotonic()
-    with redis.pipeline() as pipe:
+    async with await redis.pipeline() as pipe:
         for source, rate in rates.items():
+            log.info(f'source, crawl rate:'
+                     f' {source},'
+                     f' {rate}')
             token_key = f'{CURRTOKEN_PREFIX}{source}'
             # Rates below 1rps need replenishment deferred due to assorted
             # implementation details with crawl workers.
@@ -119,25 +123,28 @@ async def rate_limit_regulator(session, redis):
     crawl_size_check_frequency = HALF_HOUR_SEC
 
     last_override_check = float('-inf')
-    override_check_frequency = 30
-    rate_limits = {}
+    override_check_frequency = 10
+    auto_rate_limits = {}
+    overridden_rate_limits = {}
     replenish_later = {}
     while True:
         now = time.monotonic()
 
         time_since_crawl_size_check = now - last_crawl_size_check
         if time_since_crawl_size_check > crawl_size_check_frequency:
-            rate_limits = await get_crawl_sizes(session)
-            overrides = await get_overrides(rate_limits, redis)
-            rate_limits.update(overrides)
+            auto_rate_limits = await get_crawl_sizes(session)
+            overrides = await get_overrides(auto_rate_limits, redis)
+            overridden_rate_limits.update(auto_rate_limits)
+            overridden_rate_limits.update(overrides)
             last_crawl_size_check = now
             last_override_check = now
 
         time_since_override_check = now - last_override_check
         if time_since_override_check > override_check_frequency:
-            overrides = await get_overrides(rate_limits, redis)
-            rate_limits.update(overrides)
+            overrides = await get_overrides(auto_rate_limits, redis)
+            overridden_rate_limits.update(auto_rate_limits)
+            overridden_rate_limits.update(overrides)
             last_override_check = now
 
-        await replenish_tokens(replenish_later, rate_limits, redis)
+        await replenish_tokens(replenish_later, overridden_rate_limits, redis)
         await asyncio.sleep(1)

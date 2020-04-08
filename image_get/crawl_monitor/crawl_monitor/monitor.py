@@ -1,11 +1,9 @@
 import asyncio
 import aredis
+import aiohttp
+import logging as log
 import crawl_monitor.settings as settings
-
-
-async def adjust_rates():
-    while True:
-        await asyncio.sleep(settings.MONITOR_INTERVAL_SECONDS)
+from crawl_monitor.rate_limit import rate_limit_regulator
 
 
 async def log_state():
@@ -14,9 +12,12 @@ async def log_state():
 
 
 async def monitor():
-    await adjust_rates()
+    session = aiohttp.ClientSession()
+    redis = aredis.StrictRedis(host=settings.REDIS_HOST)
+    await rate_limit_regulator(session, redis)
     await log_state()
 
 
 if __name__ == '__main__':
-    asyncio.run(monitor(), debug=True)
+    log.basicConfig(level=log.DEBUG)
+    asyncio.run(monitor())
