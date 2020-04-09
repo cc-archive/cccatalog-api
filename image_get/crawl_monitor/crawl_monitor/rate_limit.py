@@ -1,6 +1,7 @@
 import asyncio
 import time
 import logging as log
+from collections import Counter
 from aiohttp.client import ClientSession
 
 # Crawl sizes below the minimum get the minimum crawl rate.
@@ -86,6 +87,42 @@ async def recompute_crawl_rates(session: ClientSession):
     return crawl_rates
 
 
+def _within_error_window_threshold(window):
+    """
+    Check that the response codes in an error window do not
+    exceed our threshold.
+    :param window: A list of response codes
+    :return A boolean
+    """
+    if len(window) <= 5:
+        # Not enough samples to measure
+        return True
+    errors = 0
+    successful = 0
+    for status in window:
+        status, _ = str(status).split(':')
+        if status not in EXPECTED_STATUSES:
+            errors += 1
+        else:
+            successful += 1
+    tolerance = ERROR_TOLERANCE_PERCENT / 10
+    if not successful or errors / successful > tolerance:
+        return False
+    else:
+        return True
+
+
+def _every_request_failed(statuses):
+    errors = 0
+    successful = 0
+    for status in statuses:
+        if str(status) not in EXPECTED_STATUSES:
+            errors += 1
+        else:
+            successful += 1
+    return not bool(successful)
+
+
 async def check_error_thresholds(sources, redis):
     """
     If crawlers are reporting too many errors, halt the crawl.
@@ -101,34 +138,21 @@ async def check_error_thresholds(sources, redis):
         )
         last_50_statuses = await redis.lrange(last_50_statuses_key, 0, -1)
 
-        errors = 0
-        successful = 0
-        for status in one_minute_window:
-            status, _ = str(status).split(':')
-            if status not in EXPECTED_STATUSES:
-                errors += 1
-            else:
-                successful += 1
-        tolerance = ERROR_TOLERANCE_PERCENT / 10
-        if len(one_minute_window) > 5:
-            if not successful or errors / successful > tolerance:
-                log.debug(f'{source} tripped temp halt')
-                await redis.sadd(TEMP_HALTED_SET, source)
-        else:
+        if _within_error_window_threshold(one_minute_window):
             await redis.srem(TEMP_HALTED_SET, source)
+        else:
+            responses = [str(res).split(':')[0] for res in one_minute_window]
+            response_counts = dict(Counter(responses))
+            log.warning(f'{source} tripped temporary halt.'
+                        f' Response codes: {response_counts}')
+            await redis.sadd(TEMP_HALTED_SET, source)
 
-        if len(last_50_statuses) >= 50:
-            errors = 0
-            successful = 0
-            for status in last_50_statuses:
-                if str(status) not in EXPECTED_STATUSES:
-                    errors += 1
-                else:
-                    successful = 0
-            if not successful:
-                await redis.sadd(HALTED_SET, source)
-                log.warning(f'{source} tripped serious halt;'
-                            f' manual intervention required')
+        status_samples = len(last_50_statuses)
+        if status_samples >= 50 and _every_request_failed(last_50_statuses):
+            await redis.sadd(HALTED_SET, source)
+            response_counts = dict(Counter(last_50_statuses))
+            log.error(f'{source} tripped serious halt; manual intervention '
+                      f'required. Response codes: {response_counts}')
     log.debug(f'Checked error thresholds in {time.monotonic() - now}')
 
 
