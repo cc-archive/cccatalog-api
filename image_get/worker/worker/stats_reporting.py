@@ -49,53 +49,51 @@ TLD_ERRORS = 'resize_errors:'
 SUCCESS_COUNT = 'num_resized'
 TLD_SUCCESS = 'num_resized:'
 
-KNOWN_TLDS = 'known_tlds'
+KNOWN_SOURCES = 'known_sources'
 
 
 class StatsManager:
     def __init__(self, redis):
         self.redis = redis
-        self.known_tlds = set()
+        self.known_sources = set()
 
     @staticmethod
-    async def _record_window_samples(pipe, domain, status):
+    async def _record_window_samples(pipe, source, status):
         """ Insert a status into all sliding windows. """
         now = time.monotonic()
         # Time-based sliding windows
         for stat_key, interval in WINDOW_PAIRS:
-            key = f'{stat_key}{domain}'
+            key = f'{stat_key}{source}'
             await pipe.zadd(key, now, status)
             # Delete events from outside the window
             await pipe.zremrangebyscore(key, '-inf', now - interval)
         # "Last n requests" window
-        await pipe.rpush(f'{LAST_50_REQUESTS}{domain}', status)
-        await pipe.ltrim(f'{LAST_50_REQUESTS}{domain}', -50, -1)
+        await pipe.rpush(f'{LAST_50_REQUESTS}{source}', status)
+        await pipe.ltrim(f'{LAST_50_REQUESTS}{source}', -50, -1)
 
-    async def record_error(self, tld, code):
+    async def record_error(self, source, code):
         """
         :param tld: The domain key for the associated URL.
         :param code: An optional status code.
         """
-        domain = f'{tld.domain}.{tld.suffix}'
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(ERROR_COUNT)
-            await pipe.incr(f'{TLD_ERRORS}{domain}')
-            await pipe.incr(f'{TLD_ERRORS}{domain}:{code}')
-            await self._record_window_samples(pipe, domain, code)
+            await pipe.incr(f'{TLD_ERRORS}{source}')
+            await pipe.incr(f'{TLD_ERRORS}{source}:{code}')
+            await self._record_window_samples(pipe, source, code)
             await pipe.execute()
 
-    async def record_success(self, tld):
-        domain = f'{tld.domain}.{tld.suffix}'
+    async def record_success(self, source):
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(SUCCESS_COUNT)
-            await pipe.incr(f'{TLD_SUCCESS}{domain}')
-            await self._record_window_samples(pipe, domain, status=200)
+            await pipe.incr(f'{TLD_SUCCESS}{source}')
+            await self._record_window_samples(pipe, source, status=200)
             await pipe.execute()
 
-    async def update_tlds(self, tld):
+    async def update_sources(self, source):
         """
         If a TLD hasn't been seen before, add it to the set in Redis.
         """
-        if tld not in self.known_tlds:
-            self.known_tlds.add(tld)
-            await self.redis.sadd(KNOWN_TLDS, tld)
+        if source not in self.known_sources:
+            self.known_sources.add(source)
+            await self.redis.sadd(KNOWN_SOURCES, source)

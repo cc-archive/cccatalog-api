@@ -228,11 +228,13 @@ def test_poll():
     msgs = [
         {
             'url': 'http://example.org',
-            'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca'
+            'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca',
+            'source': 'example'
         },
         {
             'url': 'https://creativecommons.org/fake.jpg',
-            'uuid': '4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d'
+            'uuid': '4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
+            'source': 'example'
         }
     ]
     encoded_msgs = [json.dumps(msg) for msg in msgs]
@@ -257,14 +259,15 @@ async def test_pipeline():
     stats = StatsManager(redis)
     await process_image(
         persister=validate_thumbnail,
-        session=FakeAioSession(),
+        session=RateLimitedClientSession(FakeAioSession(), redis),
         url='https://example.gov/hello.jpg',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-        stats=stats
+        stats=stats,
+        source='example'
     )
     assert redis.store['num_resized'] == 1
-    assert redis.store['num_resized:example.gov'] == 1
-    assert len(redis.store['status60s:example.gov']) == 1
+    assert redis.store['num_resized:example'] == 1
+    assert len(redis.store['status60s:example']) == 1
 
 
 @pytest.mark.asyncio
@@ -273,10 +276,11 @@ async def test_handles_corrupt_images_gracefully():
     stats = StatsManager(redis)
     await process_image(
         persister=validate_thumbnail,
-        session=FakeAioSession(corrupt=True),
+        session=RateLimitedClientSession(FakeAioSession(corrupt=True), redis),
         url='fake_url',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-        stats=stats
+        stats=stats,
+        source='example'
     )
 
 
@@ -284,21 +288,22 @@ async def test_handles_corrupt_images_gracefully():
 async def test_records_errors():
     redis = FakeRedis()
     stats = StatsManager(redis)
-    session = FakeAioSession(status=403)
+    session = RateLimitedClientSession(FakeAioSession(status=403), redis)
     await process_image(
         persister=validate_thumbnail,
         session=session,
         url='https://example.gov/image.jpg',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-        stats=stats
+        stats=stats,
+        source='example'
     )
     expected_keys = [
         'resize_errors',
-        'resize_errors:example.gov',
-        'resize_errors:example.gov:403',
-        'status60s:example.gov',
-        'status1hr:example.gov',
-        'status12hr:example.gov'
+        'resize_errors:example',
+        'resize_errors:example:403',
+        'status60s:example',
+        'status1hr:example',
+        'status12hr:example'
     ]
     for key in expected_keys:
         val = redis.store[key]
@@ -308,8 +313,8 @@ async def test_records_errors():
 async def _replenish_tokens_10rps(redis):
     """ Replenish rate limit tokens at 10 requests per second. """
     while True:
-        await redis.set('currtokens:staticflickr.com', 10)
-        await redis.set('currtokens:example.gov', 10)
+        await redis.set('currtokens:flickr', 10)
+        await redis.set('currtokens:example', 10)
         await asyncio.sleep(1)
 
 
@@ -319,7 +324,8 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
     msgs = [
         {
             'url': 'https://example.gov/hewwo.jpg',
-            'uuid': '96136357-6f32-4174-b4ca-ae67e963bc55'
+            'uuid': '96136357-6f32-4174-b4ca-ae67e963bc55',
+            'source': 'example'
         }
     ]*msg_count
     encoded_msgs = [json.dumps(msg) for msg in msgs]

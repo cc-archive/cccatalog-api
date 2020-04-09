@@ -11,15 +11,18 @@ This is a sample image resize event producer.
 msgs = [
     {
         'url': 'https://live.staticflickr.com/7454/8728178381_00be690ebc_b.jpg',
-        'uuid': 'cdbc3b4a-9b32-4f80-b772-1430251e0fd4'
+        'uuid': 'cdbc3b4a-9b32-4f80-b772-1430251e0fd4',
+        'source': 'flickr'
     },
     {
         'url': 'https://farm4.staticflickr.com/3289/3103459782_1a2041a696_b.jpg',
-        'uuid': '3989f25b-21f7-4fce-874f-8a2a6f956a1d'
+        'uuid': '3989f25b-21f7-4fce-874f-8a2a6f956a1d',
+        'source': 'flickr'
     },
     {
         'url': 'https://farm9.staticflickr.com/8116/8606654389_e56c706e2c_b.jpg',
-        'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca'
+        'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca',
+        'source': 'flickr'
     }
 ]
 

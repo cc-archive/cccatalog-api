@@ -66,7 +66,8 @@ async def consume(consumer, image_processor, terminate=False):
                     t = asyncio.create_task(
                        image_processor(
                            url=msg['url'],
-                           identifier=msg['uuid']
+                           identifier=msg['uuid'],
+                           source=msg['source']
                        )
                     )
                     scheduled.append(t)
@@ -78,15 +79,6 @@ async def consume(consumer, image_processor, terminate=False):
                     await asyncio.gather(*scheduled)
                     return
                 await asyncio.sleep(30)
-
-
-async def replenish_tokens(redis):
-    """ """
-    # Todo XXX delete this function; we need to automatically learn the rate limit
-    while True:
-        await redis.set('currtokens:staticflickr.com', 60)
-        await redis.set('currtokens:example.gov', 60)
-        await asyncio.sleep(1)
 
 
 async def setup_consumer():
@@ -106,11 +98,7 @@ async def setup_consumer():
         zookeeper_connect=settings.ZOOKEEPER_HOST
     )
 
-    # Todo: clean this up
     redis_client = aredis.StrictRedis(host=settings.REDIS_HOST)
-    loop = asyncio.get_event_loop()
-    loop.create_task(replenish_tokens(redis_client))
-
     aiosession = RateLimitedClientSession(
         aioclient=aiohttp.ClientSession(),
         redis=redis_client

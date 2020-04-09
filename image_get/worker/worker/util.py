@@ -42,11 +42,11 @@ def save_thumbnail_s3(s3_client, img: BytesIO, identifier):
     )
 
 
-async def process_image(persister, session, url, identifier, stats: StatsManager):
+async def process_image(persister, session, url, identifier, stats: StatsManager, source):
     """
     Get an image, resize it, and persist it.
     :param stats: A StatsManager for recording task statuses.
-    :param semaphore: A shared semaphore limiting concurrent execution.
+    :param source: Used to determine rate limit policy. Example: flickr, behance
     :param identifier: Our identifier for the image at the URL.
     :param persister: The function defining image persistence. It
     should do something like save an image to disk, or upload it to
@@ -55,19 +55,16 @@ async def process_image(persister, session, url, identifier, stats: StatsManager
     :param url: The URL of the image.
     """
     loop = asyncio.get_event_loop()
-    tld = tldextract.extract(url)
-    domain = f'{tld.domain}.{tld.suffix}'
-    await stats.update_tlds(domain)
-    img_resp = await session.get(url)
+    img_resp = await session.get(url, source)
     if img_resp.status >= 400:
-        await stats.record_error(tld, code=img_resp.status)
+        await stats.record_error(source, code=img_resp.status)
         return
     buffer = BytesIO(await img_resp.read())
     try:
         img = await loop.run_in_executor(None, partial(Image.open, buffer))
     except UnidentifiedImageError:
         await stats.record_error(
-            tld,
+            source,
             code="UnidentifiedImageError"
         )
         return
@@ -77,7 +74,7 @@ async def process_image(persister, session, url, identifier, stats: StatsManager
     await loop.run_in_executor(
         None, partial(persister, img=thumb, identifier=identifier)
     )
-    await stats.record_success(tld)
+    await stats.record_success(source)
 
 
 async def monitor_task_list(tasks):

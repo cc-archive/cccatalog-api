@@ -21,13 +21,13 @@ class RateLimitedClientSession:
         self.client = aioclient
         self.redis = redis
 
-    async def _get_token(self, tld):
+    async def _get_token(self, source):
         """
         Get a rate limiting token for a URL.
-        :param tld: The domain of the item.
+        :param source: The source of the URL, such as "flickr" or "behance".
         :return: whether a token was successfully obtained
         """
-        token_key = f'{CURRTOKEN_PREFIX}{tld.domain}.{tld.suffix}'
+        token_key = f'{CURRTOKEN_PREFIX}{source}'
         tokens = int(await self.redis.decr(token_key))
         if tokens >= 0:
             token_acquired = True
@@ -37,9 +37,8 @@ class RateLimitedClientSession:
             token_acquired = False
         return token_acquired
 
-    async def get(self, url):
-        tld = tldextract.extract(url)
+    async def get(self, url, source):
         token_acquired = False
         while not token_acquired:
-            token_acquired = await self._get_token(tld)
+            token_acquired = await self._get_token(source)
         return await self.client.get(url)
