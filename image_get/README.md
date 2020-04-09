@@ -36,9 +36,11 @@ The consumer expects a JSON message with the following structure:
 ```
 {
     'url': 'https://example.gov/example.jpg',
-    'uuid': '7563efd4-58d0-41eb-9a4f-3903d36a5225'
+    'uuid': '7563efd4-58d0-41eb-9a4f-3903d36a5225',
+    'source': 'example'
 }
 ```
 
 *url*: The URL of the image
 *uuid*: Our unique identifier for an image.
+*source*: The source of an image (in our case, this should match the `provider` field in our data schema). This is used to determine what rate limit policy should apply to the URL.

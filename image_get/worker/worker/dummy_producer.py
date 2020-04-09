@@ -31,7 +31,7 @@ encoded_msgs = [json.dumps(msg) for msg in msgs]
 client = KafkaClient(hosts='kafka:9092')
 topic = client.topics['inbound_images']
 
-num_messages = 5000000
+num_messages = 5000
 counter = 0
 with topic.get_sync_producer() as producer:
     for msg in islice(cycle(encoded_msgs), num_messages):

@@ -64,7 +64,7 @@ class StatsManager:
         # Time-based sliding windows
         for stat_key, interval in WINDOW_PAIRS:
             key = f'{stat_key}{source}'
-            await pipe.zadd(key, now, status)
+            await pipe.zadd(key, now, f'{status}:{time.monotonic()}')
             # Delete events from outside the window
             await pipe.zremrangebyscore(key, '-inf', now - interval)
         # "Last n requests" window

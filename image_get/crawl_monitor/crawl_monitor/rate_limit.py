@@ -100,7 +100,7 @@ def _within_error_window_threshold(window):
     errors = 0
     successful = 0
     for status in window:
-        status, _ = str(status).split(':')
+        status, _ = str(status, 'utf-8').split(':')
         if status not in EXPECTED_STATUSES:
             errors += 1
         else:
@@ -116,7 +116,7 @@ def _every_request_failed(statuses):
     errors = 0
     successful = 0
     for status in statuses:
-        if str(status) not in EXPECTED_STATUSES:
+        if str(status, 'utf-8') not in EXPECTED_STATUSES:
             errors += 1
         else:
             successful += 1
@@ -211,7 +211,7 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
                       f' {rate},'
                       f' {tokens}')
             if tokens:
-                await redis.set(token_key, tokens)
+                await redis.set(token_key, int(tokens))
         await pipe.execute()
 
 

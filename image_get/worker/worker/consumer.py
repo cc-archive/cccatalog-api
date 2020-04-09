@@ -62,12 +62,12 @@ async def consume(consumer, image_processor, terminate=False):
                 batch_size = len(messages)
                 total += batch_size
                 for msg in messages:
-                    await semaphore.acquire()
                     t = asyncio.create_task(
                        image_processor(
                            url=msg['url'],
                            identifier=msg['uuid'],
-                           source=msg['source']
+                           source=msg['source'],
+                           semaphore=semaphore
                        )
                     )
                     scheduled.append(t)
@@ -78,7 +78,7 @@ async def consume(consumer, image_processor, terminate=False):
                 if terminate:
                     await asyncio.gather(*scheduled)
                     return
-                await asyncio.sleep(30)
+                await asyncio.sleep(10)
 
 
 async def setup_consumer():
