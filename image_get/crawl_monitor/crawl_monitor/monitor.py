@@ -14,8 +14,9 @@ async def log_state():
 async def monitor():
     session = aiohttp.ClientSession()
     redis = aredis.StrictRedis(host=settings.REDIS_HOST)
-    await rate_limit_regulator(session, redis)
-    await log_state()
+    regulator = asyncio.create_task(rate_limit_regulator(session, redis))
+    structured_logger = asyncio.create_task(log_state())
+    await asyncio.wait([regulator, structured_logger])
 
 
 if __name__ == '__main__':
