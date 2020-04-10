@@ -194,7 +194,6 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
 
             # Rates below 1rps need replenishment deferred due to assorted
             # implementation details with crawl workers.
-            # Todo xxx replace this with a future
             if 0 < rate < 1:
                 if source not in replenish_later:
                     replenish_later[source] = now + (1 / rate)
