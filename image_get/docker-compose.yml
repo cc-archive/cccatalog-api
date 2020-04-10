@@ -26,7 +26,9 @@ services:
       - zookeeper
     restart: always
   worker:
-    build: ./worker/
+    build: 
+      context: .
+      dockerfile: Dockerfile-worker
     depends_on:
       - redis
       - zookeeper
@@ -36,7 +38,9 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_DEFAULT_REGION
   monitor:
-    build: ./crawl_monitor/
+    build:
+      context: .
+      dockerfile: Dockerfile-monitor
     depends_on:
       - redis
       - zookeeper

@@ -1,5 +1,4 @@
 import asyncio
-import tldextract
 
 """
 Every TLD (e.g. flickr.com, metmuseum.org) gets a token bucket. Before a worker

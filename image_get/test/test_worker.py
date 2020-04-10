@@ -263,7 +263,8 @@ async def test_pipeline():
         url='https://example.gov/hello.jpg',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
         stats=stats,
-        source='example'
+        source='example',
+        semaphore=asyncio.BoundedSemaphore(1000)
     )
     assert redis.store['num_resized'] == 1
     assert redis.store['num_resized:example'] == 1
@@ -280,7 +281,8 @@ async def test_handles_corrupt_images_gracefully():
         url='fake_url',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
         stats=stats,
-        source='example'
+        source='example',
+        semaphore=asyncio.BoundedSemaphore(1000)
     )
 
 
@@ -295,7 +297,8 @@ async def test_records_errors():
         url='https://example.gov/image.jpg',
         identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
         stats=stats,
-        source='example'
+        source='example',
+        semaphore=asyncio.BoundedSemaphore(1000)
     )
     expected_keys = [
         'resize_errors',
@@ -347,7 +350,8 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
     image_processor = partial(
         process_image, session=aiosession,
         persister=validate_thumbnail,
-        stats=stats
+        stats=stats,
+        semaphore=asyncio.BoundedSemaphore(1000)
     )
     return consume(consumer, image_processor, terminate=True)
 

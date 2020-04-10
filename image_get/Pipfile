@@ -4,13 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-Scrapy = "*"
 pykafka = "*"
 aiohttp = "*"
 Pillow = "*"
 boto3 = "*"
 pytest-asyncio = "*"
-tldextract = "*"
 aioredis = "*"
 aredis = "*"
 
