@@ -44,10 +44,10 @@ WINDOW_PAIRS = [
 ]
 
 ERROR_COUNT = 'resize_errors'
-TLD_ERRORS = 'resize_errors:'
+SPECIFIC_ERRORS = 'resize_errors:'
 
 SUCCESS_COUNT = 'num_resized'
-TLD_SUCCESS = 'num_resized:'
+SPECIFIC_SUCCESS = 'num_resized:'
 
 KNOWN_SOURCES = 'known_sources'
 
@@ -78,15 +78,15 @@ class StatsManager:
         """
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(ERROR_COUNT)
-            await pipe.incr(f'{TLD_ERRORS}{source}')
-            await pipe.incr(f'{TLD_ERRORS}{source}:{code}')
+            await pipe.incr(f'{SPECIFIC_ERRORS}{source}')
+            await pipe.incr(f'{SPECIFIC_ERRORS}{source}:{code}')
             await self._record_window_samples(pipe, source, code)
             await pipe.execute()
 
     async def record_success(self, source):
         async with await self.redis.pipeline() as pipe:
             await pipe.incr(SUCCESS_COUNT)
-            await pipe.incr(f'{TLD_SUCCESS}{source}')
+            await pipe.incr(f'{SPECIFIC_SUCCESS}{source}')
             await self._record_window_samples(pipe, source, status=200)
             await pipe.execute()
 
