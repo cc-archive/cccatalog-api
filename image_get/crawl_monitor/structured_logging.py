@@ -48,6 +48,7 @@ async def log_state(redis, info):
         last_error_count = error_count
         halted = _decode_bytes_list(await redis.smembers(HALTED_SET))
         state = {
+            'event': 'monitoring_update',
             'time': str(datetime.datetime.now().isoformat()),
             'general': {
                 'num_resized': success_count,

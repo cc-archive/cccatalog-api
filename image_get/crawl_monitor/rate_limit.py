@@ -1,6 +1,8 @@
 import asyncio
 import time
 import logging as log
+import json
+import datetime
 from collections import Counter
 from aiohttp.client import ClientSession
 
@@ -126,6 +128,23 @@ def _every_request_failed(statuses):
     return not bool(successful)
 
 
+def _log_halt_event(source, halt_type, msg):
+    """
+
+    :param source: The source being halted
+    :param halt_type: 'temporary' or 'permanent'
+    :param msg: Explanation for the operator
+    """
+    out = {
+        'event': 'crawl_halted',
+        'time': str(datetime.datetime.now().isoformat()),
+        'msg': msg,
+        'type': halt_type,
+        'source': source
+    }
+    log.error(json.dumps(out))
+
+
 async def check_error_thresholds(sources, redis):
     """
     If crawlers are reporting too many errors, halt the crawl.
@@ -144,19 +163,21 @@ async def check_error_thresholds(sources, redis):
         if _within_error_window_threshold(one_minute_window):
             await redis.srem(TEMP_HALTED_SET, source)
         else:
+            await redis.sadd(TEMP_HALTED_SET, source)
             responses = [str(res).split(':')[0] for res in one_minute_window]
             response_counts = dict(Counter(responses))
-            log.warning(f'{source} tripped temporary halt.'
-                        f' Response codes: {response_counts}')
-            await redis.sadd(TEMP_HALTED_SET, source)
+            msg = f'{source} tripped temporary halt.' \
+                  f' Response codes: {response_counts}'
+            _log_halt_event(source, 'temporary', msg)
 
         status_samples = len(last_50_statuses)
         if status_samples >= 50 and _every_request_failed(last_50_statuses):
             await redis.sadd(HALTED_SET, source)
             response_counts = dict(Counter(last_50_statuses))
-            log.error(f'{source} tripped serious halt circuit breaker;'
-                      f' manual intervention required. '
-                      f'Response codes: {response_counts}')
+            msg = f'{source} tripped serious halt circuit breaker;' \
+                  f' manual intervention required. ' \
+                  f'Response codes: {response_counts}'
+            _log_halt_event(source, 'permanent', msg)
     log.debug(f'Checked error thresholds in {time.monotonic() - now}')
 
 
