@@ -105,7 +105,7 @@ def _within_error_window_threshold(window):
             errors += 1
         else:
             successful += 1
-    tolerance = ERROR_TOLERANCE_PERCENT / 10
+    tolerance = ERROR_TOLERANCE_PERCENT / 100
     if not successful or errors / successful > tolerance:
         return False
     else:
@@ -151,8 +151,9 @@ async def check_error_thresholds(sources, redis):
         if status_samples >= 50 and _every_request_failed(last_50_statuses):
             await redis.sadd(HALTED_SET, source)
             response_counts = dict(Counter(last_50_statuses))
-            log.error(f'{source} tripped serious halt; manual intervention '
-                      f'required. Response codes: {response_counts}')
+            log.error(f'{source} tripped serious halt circuit breaker;'
+                      f' manual intervention required. '
+                      f'Response codes: {response_counts}')
     log.debug(f'Checked error thresholds in {time.monotonic() - now}')
 
 
@@ -164,11 +165,11 @@ async def get_overrides(sources, redis):
         for source in sources:
             await pipe.get(f'{OVERRIDE_PREFIX}{source}')
         res = await pipe.execute()
-    overrides = {}
-    for idx, source in enumerate(sources):
-        if res[idx]:
-            overrides[source] = float(res[idx])
-    return overrides
+        overrides = {}
+        for idx, source in enumerate(sources):
+            if res[idx]:
+                overrides[source] = float(res[idx])
+        return overrides
 
 
 async def replenish_tokens(replenish_later, rates: dict, redis):

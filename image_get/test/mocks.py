@@ -86,8 +86,14 @@ class FakeRedisPipeline:
     async def zadd(self, key, score, value):
         self.todo.append(partial(self.redis.zadd, key, score, value))
 
+    async def zrangebyscore(self, key, start, end):
+        self.todo.append(partial(self.redis.zrangebyscore, key, start, end))
+
     async def zremrangebyscore(self, key, start, end):
         self.todo.append(partial(self.redis.zremrangebyscore, key, start, end))
+
+    async def get(self, key):
+        return self.todo.append(partial(self.redis.get, key))
 
     async def __aexit__(self, exc_type, exc, tb):
         return self
@@ -96,8 +102,10 @@ class FakeRedisPipeline:
         return self
 
     async def execute(self):
+        results = []
         for task in self.todo:
-            await task()
+            results.append(await task())
+        return results
 
 
 class FakeRedis:
@@ -106,6 +114,12 @@ class FakeRedis:
 
     async def set(self, key, val):
         self.store[key] = val
+
+    async def get(self, key):
+        try:
+            return self.store[key]
+        except KeyError:
+            return None
 
     async def decr(self, key):
         if key in self.store:
@@ -133,12 +147,30 @@ class FakeRedis:
     async def sadd(self, key, value):
         if key not in self.store:
             self.store[key] = set()
-        self.store[key].add(value)
+        self.store[key].add(bytes(value, 'utf8-'))
+
+    async def srem(self, key, value):
+        if key in self.store:
+            self.store[key].remove(value)
+
+    async def lrange(self, key, start, end):
+        try:
+            return self.store[key][start:end]
+        except KeyError:
+            return []
 
     async def ltrim(self, key, start, end):
         pass
 
+    async def smembers(self, key):
+        try:
+            return list(self.store[key])
+        except KeyError:
+            return []
+
     async def zremrangebyscore(self, key, start, end):
+        if key not in self.store:
+            return None
         # inefficiency tolerated because this is a mock
         start = float(start)
         end = float(end)
@@ -149,6 +181,15 @@ class FakeRedis:
                 delete_idxs.append(idx)
         for idx in reversed(delete_idxs):
             del self.store[key][idx]
+
+    async def zrangebyscore(self, key, start, end):
+        try:
+            res = []
+            for score, value in self.store[key]:
+                res.append(value)
+            return res
+        except KeyError:
+            return []
 
     async def pipeline(self):
         return FakeRedisPipeline(self)
