@@ -218,7 +218,7 @@ async def replenish_tokens(replenish_later, rates: dict, redis):
         await pipe.execute()
 
 
-async def rate_limit_regulator(session, redis):
+async def rate_limit_regulator(session, redis, info=None):
     """
     Regulate the rate limit of each data source.
 
@@ -244,8 +244,6 @@ async def rate_limit_regulator(session, redis):
             auto_rate_limits_check = await recompute_crawl_rates(session)
             if auto_rate_limits_check:
                 auto_rate_limits = auto_rate_limits_check
-                for source in auto_rate_limits:
-                    await redis.sadd(SOURCES, source)
             overrides = await get_overrides(auto_rate_limits, redis)
             overridden_rate_limits.update(auto_rate_limits)
             overridden_rate_limits.update(overrides)
@@ -260,5 +258,7 @@ async def rate_limit_regulator(session, redis):
             last_override_check = now
 
         await check_error_thresholds(overridden_rate_limits, redis)
+        if info is not None:
+            info['rates'] = overridden_rate_limits
         await replenish_tokens(replenish_later, overridden_rate_limits, redis)
         await asyncio.sleep(1)

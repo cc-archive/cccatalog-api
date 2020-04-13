@@ -10,8 +10,10 @@ from crawl_monitor.structured_logging import log_state
 async def monitor():
     session = aiohttp.ClientSession()
     redis = aredis.StrictRedis(host=settings.REDIS_HOST)
-    regulator = asyncio.create_task(rate_limit_regulator(session, redis))
-    structured_logger = asyncio.create_task(log_state(redis))
+    # For sharing information between rate limit regulator and monitoring system
+    info = {}
+    regulator = asyncio.create_task(rate_limit_regulator(session, redis, info))
+    structured_logger = asyncio.create_task(log_state(redis, info))
     await asyncio.wait([regulator, structured_logger])
 
 
