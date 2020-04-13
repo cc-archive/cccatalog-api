@@ -56,8 +56,10 @@ def create_mock_regulator(sources):
 async def test_rate_regulation(source_fixture):
     sources = source_fixture
     redis, regulator_task = create_mock_regulator(sources)
+    redis.store['override_rate:another'] = 10
     await run_regulator(regulator_task)
     assert redis.store['currtokens:example'] > 1
+    assert redis.store['currtokens:another'] == 10
 
 
 @pytest.mark.asyncio
