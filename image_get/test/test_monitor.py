@@ -26,6 +26,12 @@ def source_fixture():
             "image_count": 5000000,
             "display_name": "Example",
             "source_url": "example.com"
+        },
+        {
+            "source_name": "another",
+            "image_count": 1000000,
+            "display_name": "Another",
+            "source_url": "whatever"
         }
     ]
 
@@ -59,8 +65,10 @@ async def test_error_circuit_breaker(source_fixture):
     sources = source_fixture
     redis, regulator_task = create_mock_regulator(sources)
     redis.store['statuslast50req:example'] = [b'500'] * 51
+    redis.store['statuslast50req:another'] = [b'200'] * 51
     await run_regulator(regulator_task)
     assert b'example' in redis.store['halted']
+    assert b'another' not in redis.store['halted']
 
 
 @pytest.mark.asyncio
@@ -68,8 +76,11 @@ async def test_temporary_halts(source_fixture):
     sources = source_fixture
     redis, regulator_task = create_mock_regulator(sources)
     one_second_ago = time.monotonic() - 1
+    # 'example' should trip a temporary halt, but 'another' should not
     error_key = 'status60s:example'
+    no_error_key = 'status60s:another'
     redis.store[error_key] = []
+    redis.store[no_error_key] = []
     for _ in range(3):
         redis.store[error_key].append(
             (one_second_ago, bytes(f'500:{one_second_ago}', 'utf-8'))
@@ -78,5 +89,9 @@ async def test_temporary_halts(source_fixture):
         redis.store[error_key].append(
             (one_second_ago, bytes(f'200:{one_second_ago}', 'utf-8'))
         )
+        redis.store[no_error_key].append(
+            (one_second_ago, bytes(f'200:{one_second_ago}', 'utf-8'))
+        )
     await run_regulator(regulator_task)
     assert b'example' in redis.store['temp_halted']
+    assert b'another' not in redis.store['temp_halted']

@@ -150,8 +150,11 @@ class FakeRedis:
         self.store[key].add(bytes(value, 'utf8-'))
 
     async def srem(self, key, value):
-        if key in self.store:
-            self.store[key].remove(value)
+        try:
+            if key in self.store:
+                self.store[key].remove(value)
+        except KeyError:
+            pass
 
     async def lrange(self, key, start, end):
         try:
