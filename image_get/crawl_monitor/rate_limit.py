@@ -39,6 +39,9 @@ EXPECTED_STATUSES = {
     'UnidentifiedImageError'
 }
 
+# Set tracking the domains we are crawling
+SOURCES = 'sources'
+
 
 def compute_crawl_rate(crawl_size):
     """
@@ -241,6 +244,8 @@ async def rate_limit_regulator(session, redis):
             auto_rate_limits_check = await recompute_crawl_rates(session)
             if auto_rate_limits_check:
                 auto_rate_limits = auto_rate_limits_check
+                for source in auto_rate_limits:
+                    await redis.sadd(SOURCES, source)
             overrides = await get_overrides(auto_rate_limits, redis)
             overridden_rate_limits.update(auto_rate_limits)
             overridden_rate_limits.update(overrides)

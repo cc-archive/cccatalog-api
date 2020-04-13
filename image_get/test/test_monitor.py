@@ -53,7 +53,7 @@ def create_mock_regulator(sources):
 
 
 @pytest.mark.asyncio
-async def test_rate_regulation(source_fixture):
+async def test_rate_override(source_fixture):
     sources = source_fixture
     redis, regulator_task = create_mock_regulator(sources)
     redis.store['override_rate:another'] = 10
@@ -83,17 +83,13 @@ async def test_temporary_halts(source_fixture):
     no_error_key = 'status60s:another'
     redis.store[error_key] = []
     redis.store[no_error_key] = []
+    error_response = (one_second_ago, bytes(f'500:{one_second_ago}', 'utf-8'))
+    successful_response = (one_second_ago, bytes(f'200:{one_second_ago}', 'utf-8'))
     for _ in range(3):
-        redis.store[error_key].append(
-            (one_second_ago, bytes(f'500:{one_second_ago}', 'utf-8'))
-        )
+        redis.store[error_key].append(error_response)
     for _ in range(8):
-        redis.store[error_key].append(
-            (one_second_ago, bytes(f'200:{one_second_ago}', 'utf-8'))
-        )
-        redis.store[no_error_key].append(
-            (one_second_ago, bytes(f'200:{one_second_ago}', 'utf-8'))
-        )
-    await run_regulator(regulator_task)
+        redis.store[error_key].append(error_response)
+        redis.store[no_error_key].append(successful_response)
+    await run_regulator(asyncio.shield(regulator_task))
     assert b'example' in redis.store['temp_halted']
     assert b'another' not in redis.store['temp_halted']
