@@ -158,7 +158,11 @@ class FakeRedis:
 
     async def lrange(self, key, start, end):
         try:
-            return self.store[key][start:end]
+            # Redis slices are slightly different than Python's
+            if end == -1:
+                return self.store[key][start:]
+            else:
+                return self.store[key][start:end]
         except KeyError:
             return []
 

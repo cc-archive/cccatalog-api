@@ -64,8 +64,8 @@ async def test_rate_regulation(source_fixture):
 async def test_error_circuit_breaker(source_fixture):
     sources = source_fixture
     redis, regulator_task = create_mock_regulator(sources)
-    redis.store['statuslast50req:example'] = [b'500'] * 51
-    redis.store['statuslast50req:another'] = [b'200'] * 51
+    redis.store['statuslast50req:example'] = [b'500'] * 50
+    redis.store['statuslast50req:another'] = [b'200'] * 50
     await run_regulator(regulator_task)
     assert b'example' in redis.store['halted']
     assert b'another' not in redis.store['halted']
