@@ -46,13 +46,26 @@ class FakeImageResponse:
             return f.read()
 
 
+class FakeAioResponse:
+    def __init__(self, status, body):
+        self.status = status
+        self.body = body
+
+    async def json(self):
+        return self.body
+
+
 class FakeAioSession:
-    def __init__(self, corrupt=False, status=200):
+    def __init__(self, corrupt=False, status=200, response=None):
         self.corrupt = corrupt
         self.status = status
+        self.response = response
 
     async def get(self, url):
-        return FakeImageResponse(self.status, self.corrupt)
+        if self.response:
+            return self.response
+        else:
+            return FakeImageResponse(self.status, self.corrupt)
 
 
 class FakeRedisPipeline:
