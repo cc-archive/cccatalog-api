@@ -62,7 +62,7 @@ async def log_state(redis, info):
         }
         # Add source-specific stats
         if 'rates' in info:
-            state['global_max_rps'] = sum(info['rates'].values())
+            state['general']['global_max_rps'] = sum(info['rates'].values())
             for source in info['rates']:
                 successful = _parse_redis_int(
                     await redis.get(f'num_resized:{source}')
