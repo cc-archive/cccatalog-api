@@ -2,9 +2,9 @@ import json
 import pytest
 import asyncio
 import logging as log
-
+from worker.util import AsyncProducer
 from test.mocks import FakeConsumer, FakeAioSession, FakeRedis,\
-    AioNetworkSimulatingSession
+    AioNetworkSimulatingSession, FakeProducer
 from worker.consumer import poll_consumer, consume
 from worker.stats_reporting import StatsManager
 from worker.image import process_image
@@ -141,11 +141,13 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
         redis=redis
     )
     stats = StatsManager(redis)
+    producer = AsyncProducer(FakeProducer())
     image_processor = partial(
         process_image, session=aiosession,
         persister=validate_thumbnail,
         stats=stats,
-        semaphore=asyncio.BoundedSemaphore(1000)
+        semaphore=asyncio.BoundedSemaphore(1000),
+        metadata_producer=producer
     )
     return consume(consumer, image_processor, terminate=True)
 

@@ -86,18 +86,3 @@ async def log_state(redis, info):
         await asyncio.sleep(settings.LOG_FREQUENCY_SECONDS)
 
 
-def _log_halt_event(source, halt_type, msg):
-    """
-
-    :param source: The source being halted
-    :param halt_type: 'temporary' or 'permanent'
-    :param msg: Explanation for the operator
-    """
-    out = {
-        'event': 'crawl_halted',
-        'time': str(datetime.datetime.now().isoformat()),
-        'msg': msg,
-        'type': halt_type,
-        'source': source
-    }
-    log.error(json.dumps(out))

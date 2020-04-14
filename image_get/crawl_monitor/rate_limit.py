@@ -1,4 +1,6 @@
 import asyncio
+import datetime
+import json
 import time
 import logging as log
 from collections import Counter
@@ -7,7 +9,6 @@ from aiohttp.client import ClientSession
 # Crawl sizes below the minimum get the minimum crawl rate.
 # Crawl sizes above the maximum get the maximum crawl rate.
 # Everything between is interpolated.
-from crawl_monitor.structured_logging import _log_halt_event
 
 HALF_HOUR_SEC = 60 * 30
 MIN_CRAWL_SIZE = 5000
@@ -266,3 +267,20 @@ async def rate_limit_regulator(session, redis, info=None):
             info['rates'] = overridden_rate_limits
         await replenish_tokens(replenish_later, overridden_rate_limits, redis)
         await asyncio.sleep(1)
+
+
+def _log_halt_event(source, halt_type, msg):
+    """
+
+    :param source: The source being halted
+    :param halt_type: 'temporary' or 'permanent'
+    :param msg: Explanation for the operator
+    """
+    out = {
+        'event': 'crawl_halted',
+        'time': str(datetime.datetime.now().isoformat()),
+        'msg': msg,
+        'type': halt_type,
+        'source': source
+    }
+    log.error(json.dumps(out))

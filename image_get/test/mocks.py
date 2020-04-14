@@ -31,6 +31,14 @@ class FakeConsumer:
         pass
 
 
+class FakeProducer:
+    def __init__(self):
+        self.messages = []
+
+    def produce(self, msg):
+        self.messages.append(msg)
+
+
 class FakeImageResponse:
     def __init__(self, status=200, corrupt=False):
         self.status = status
