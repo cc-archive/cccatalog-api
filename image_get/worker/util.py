@@ -86,10 +86,10 @@ class AsyncProducer:
             queue_size = len(self._metadata_messages)
             if queue_size:
                 log.info(f'Publishing {queue_size} image size metadata events')
-            start = time.monotonic()
-            for msg in self._metadata_messages:
-                self._image_metadata_producer.produce(msg)
-            rate = queue_size / (time.monotonic() - start)
-            self._metadata_messages = []
-            log.info(f'publish_rate={rate}/s')
-            await asyncio.sleep(self.frequency)
+                start = time.monotonic()
+                for msg in self._metadata_messages:
+                    self._image_metadata_producer.produce(msg)
+                rate = queue_size / (time.monotonic() - start)
+                self._metadata_messages = []
+                log.info(f'publish_rate={rate}/s')
+                await asyncio.sleep(self.frequency)
