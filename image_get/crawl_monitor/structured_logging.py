@@ -56,7 +56,8 @@ async def log_state(redis, info):
                 'success_rps': success_rate,
                 'error_rps': error_rate,
                 'circuit_breaker_tripped': halted,
-                'global_max_rps': 0
+                'global_max_rps': 0,
+                'actual_rps': success_rate + error_rate
             },
             'specific': {}
         }
