@@ -44,6 +44,14 @@ async def run_regulator(regulator_task):
         pass
 
 
+def regulator_with_api_not_reachable():
+    response = FakeAioResponse(status=500, body=None)
+    session = FakeAioSession(response=response)
+    redis = FakeRedis()
+    regulator_task = asyncio.create_task(rate_limit_regulator(session, redis))
+    return redis, regulator_task
+
+
 def create_mock_regulator(sources):
     response = FakeAioResponse(status=200, body=sources)
     session = FakeAioSession(response=response)
@@ -60,6 +68,15 @@ async def test_rate_override(source_fixture):
     await run_regulator(regulator_task)
     assert redis.store['currtokens:example'] > 1
     assert redis.store['currtokens:another'] == 10
+
+
+@pytest.mark.asyncio
+async def test_handles_api_downtime_gracefully():
+    # If we can't reach the API, we should continue crawling with only
+    # overridden rates or the last known rates.
+    redis, regulator_task = regulator_with_api_not_reachable()
+    await run_regulator(regulator_task)
+    assert True
 
 
 @pytest.mark.asyncio

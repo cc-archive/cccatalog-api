@@ -7,8 +7,8 @@ import boto3
 import botocore.client
 from functools import partial
 from timeit import default_timer as timer
-from worker.util import kafka_connect, parse_message, save_thumbnail_s3, \
-    process_image, monitor_task_list
+from worker.util import kafka_connect, parse_message, monitor_task_list, AsyncProducer
+from worker.image import process_image, save_thumbnail_s3
 from worker.rate_limit import RateLimitedClientSession
 from worker.stats_reporting import StatsManager
 
@@ -81,7 +81,7 @@ async def consume(consumer, image_processor, terminate=False):
                 await asyncio.sleep(10)
 
 
-async def setup_consumer():
+async def setup_io():
     """
     Set up all IO used by the consumer.
     """
@@ -92,12 +92,13 @@ async def setup_consumer():
         config=botocore.client.Config(max_pool_connections=settings.BATCH_SIZE)
     )
     inbound_images = kafka_client.topics['inbound_images']
+    outbound_metadata = kafka_client.topics['outbound_metadata'].get_producer()
+    producer = AsyncProducer(producer=outbound_metadata)
     consumer = inbound_images.get_balanced_consumer(
-        consumer_group='image_resizers',
+        consumer_group='image_handlers',
         auto_commit_enable=True,
         zookeeper_connect=settings.ZOOKEEPER_HOST
     )
-
     redis_client = aredis.StrictRedis(host=settings.REDIS_HOST)
     aiosession = RateLimitedClientSession(
         aioclient=aiohttp.ClientSession(),
@@ -107,17 +108,20 @@ async def setup_consumer():
     image_processor = partial(
         process_image, session=aiosession,
         persister=partial(save_thumbnail_s3, s3_client=s3),
-        stats=stats
+        stats=stats,
+        metadata_producer=producer
     )
-    return consume(consumer, image_processor)
+    return producer.listen(), consume(consumer, image_processor)
 
 
 async def listen():
     """
     Listen for image events forever.
     """
-    consumer = await setup_consumer()
-    await consumer
+    producer, consumer = await setup_io()
+    producer_task = asyncio.create_task(producer)
+    consumer_task = asyncio.create_task(consumer)
+    await asyncio.wait([producer_task, consumer_task])
 
 if __name__ == '__main__':
     log.basicConfig(level=log.INFO)

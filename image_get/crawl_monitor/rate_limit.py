@@ -76,7 +76,7 @@ async def recompute_crawl_rates(session: ClientSession):
     results = await session.get(endpoint)
     if results.status != 200:
         log.warning(
-            'Failed to update crawl sizes: could not reach CC Catalog API.'
+            'Failed to update crawl sizes: could not reach CC Catalog API. '
             'The last known crawl rates will be used.'
         )
         return None

@@ -7,7 +7,7 @@ from test.mocks import FakeConsumer, FakeAioSession, FakeRedis,\
     AioNetworkSimulatingSession
 from worker.consumer import poll_consumer, consume
 from worker.stats_reporting import StatsManager
-from worker.util import process_image
+from worker.image import process_image
 from worker.rate_limit import RateLimitedClientSession
 from PIL import Image
 from functools import partial
