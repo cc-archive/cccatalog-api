@@ -4,7 +4,7 @@ import asyncio
 import datetime
 import crawl_monitor.settings as settings
 from collections import Counter
-from crawl_monitor.rate_limit import SOURCES, HALTED_SET, TEMP_HALTED_SET
+from crawl_monitor.rate_limit import HALTED_SET
 
 
 ERROR_COUNT = 'resize_errors'
@@ -84,3 +84,20 @@ async def log_state(redis, info):
                 state['specific'][source] = source_specifics
         json_log(state)
         await asyncio.sleep(settings.LOG_FREQUENCY_SECONDS)
+
+
+def _log_halt_event(source, halt_type, msg):
+    """
+
+    :param source: The source being halted
+    :param halt_type: 'temporary' or 'permanent'
+    :param msg: Explanation for the operator
+    """
+    out = {
+        'event': 'crawl_halted',
+        'time': str(datetime.datetime.now().isoformat()),
+        'msg': msg,
+        'type': halt_type,
+        'source': source
+    }
+    log.error(json.dumps(out))
