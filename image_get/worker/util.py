@@ -84,8 +84,9 @@ class AsyncProducer:
         """ Intermittently publish queued events to Kafka. """
         while True:
             queue_size = len(self._metadata_messages)
+            if queue_size:
+                log.info(f'Publishing {queue_size} image size metadata events')
             start = time.monotonic()
-            log.info(f'Publishing {queue_size} image size metadata events')
             for msg in self._metadata_messages:
                 self._image_metadata_producer.produce(msg)
             rate = queue_size / (time.monotonic() - start)
