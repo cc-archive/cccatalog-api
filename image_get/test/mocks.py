@@ -36,6 +36,7 @@ class FakeProducer:
         self.messages = []
 
     def produce(self, msg):
+        log.info(f'producing {msg}')
         self.messages.append(msg)
 
 

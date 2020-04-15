@@ -48,7 +48,7 @@ async def monitor_task_list(tasks):
         await asyncio.sleep(1)
 
 
-class AsyncProducer:
+class MetadataProducer:
     """
     When we scrape an image, we often times want to collect additional
     information about it (such as the resolution) and incorporate it into our

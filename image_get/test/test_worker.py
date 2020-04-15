@@ -2,7 +2,8 @@ import json
 import pytest
 import asyncio
 import logging as log
-from worker.util import AsyncProducer
+import concurrent.futures
+from worker.util import MetadataProducer
 from test.mocks import FakeConsumer, FakeAioSession, FakeRedis,\
     AioNetworkSimulatingSession, FakeProducer
 from worker.consumer import poll_consumer, consume
@@ -107,6 +108,30 @@ async def test_records_errors():
         assert val == 1 or len(val) == 1
 
 
+@pytest.mark.asyncio
+async def test_dimensions_messaging():
+    redis = FakeRedis()
+    stats = StatsManager(redis)
+    kafka = FakeProducer()
+    producer = MetadataProducer(kafka)
+    await process_image(
+        persister=validate_thumbnail,
+        session=RateLimitedClientSession(FakeAioSession(), redis),
+        url='https://example.gov/hello.jpg',
+        identifier='4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
+        stats=stats,
+        source='example',
+        semaphore=asyncio.BoundedSemaphore(1000),
+        metadata_producer=producer
+    )
+    producer_task = asyncio.create_task(producer.listen())
+    try:
+        await asyncio.wait_for(producer_task, 0.01)
+    except concurrent.futures.TimeoutError:
+        pass
+    assert len(kafka.messages[0])
+
+
 async def _replenish_tokens_10rps(redis):
     """ Replenish rate limit tokens at 10 requests per second. """
     while True:
@@ -141,7 +166,7 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
         redis=redis
     )
     stats = StatsManager(redis)
-    producer = AsyncProducer(FakeProducer())
+    producer = MetadataProducer(FakeProducer())
     image_processor = partial(
         process_image, session=aiosession,
         persister=validate_thumbnail,
@@ -153,7 +178,7 @@ async def get_mock_consumer(msg_count=1000, max_rps=10):
 
 
 async def mock_listen():
-    consumer = await get_mock_consumer(msg_count=100, max_rps=11)
+    consumer = await get_mock_consumer(msg_count=30, max_rps=11)
     log.debug('Starting consumer')
     await consumer
 

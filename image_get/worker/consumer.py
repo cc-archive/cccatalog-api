@@ -7,7 +7,7 @@ import boto3
 import botocore.client
 from functools import partial
 from timeit import default_timer as timer
-from worker.util import kafka_connect, parse_message, monitor_task_list, AsyncProducer
+from worker.util import kafka_connect, parse_message, monitor_task_list, MetadataProducer
 from worker.image import process_image, save_thumbnail_s3
 from worker.rate_limit import RateLimitedClientSession
 from worker.stats_reporting import StatsManager
@@ -93,7 +93,7 @@ async def setup_io():
     )
     inbound_images = kafka_client.topics['inbound_images']
     outbound_metadata = kafka_client.topics['outbound_metadata'].get_producer()
-    producer = AsyncProducer(producer=outbound_metadata)
+    producer = MetadataProducer(producer=outbound_metadata)
     consumer = inbound_images.get_balanced_consumer(
         consumer_group='image_handlers',
         auto_commit_enable=True,
