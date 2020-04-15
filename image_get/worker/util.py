@@ -92,4 +92,4 @@ class MetadataProducer:
                 rate = queue_size / (time.monotonic() - start)
                 self._metadata_messages = []
                 log.info(f'publish_rate={rate}/s')
-                await asyncio.sleep(self.frequency)
+            await asyncio.sleep(self.frequency)

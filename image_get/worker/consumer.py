@@ -92,12 +92,14 @@ async def setup_io():
         config=botocore.client.Config(max_pool_connections=settings.BATCH_SIZE)
     )
     inbound_images = kafka_client.topics['inbound_images']
-    outbound_metadata = kafka_client.topics['resolution_updates'].get_producer()
-    producer = MetadataProducer(producer=outbound_metadata)
+    resolution_producer = kafka_client.topics['resolution_updates'] \
+        .get_producer(use_rdkafka=True)
+    producer = MetadataProducer(producer=resolution_producer)
     consumer = inbound_images.get_balanced_consumer(
         consumer_group='image_handlers',
         auto_commit_enable=True,
-        zookeeper_connect=settings.ZOOKEEPER_HOST
+        zookeeper_connect=settings.ZOOKEEPER_HOST,
+        use_rdkafka=True
     )
     redis_client = aredis.StrictRedis(host=settings.REDIS_HOST)
     aiosession = RateLimitedClientSession(

@@ -3,6 +3,8 @@ RUN pip install pipenv
 
 WORKDIR /worker
 COPY . /worker/
-RUN pipenv install
+RUN apt-get update
+RUN apt-get -y install librdkafka1 librdkafka-dev
+RUN RDKAFKA_INSTALL=system pipenv install
 
 CMD PYTHONPATH=. pipenv run python crawl_monitor/monitor.py
