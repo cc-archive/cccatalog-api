@@ -33,8 +33,8 @@ HALTED_SET = 'halted'
 TEMP_HALTED_SET = 'temp_halted'
 # Crawls get temporarily halted if they exceed this threshold.
 ERROR_TOLERANCE_PERCENT = 10
-# Statuses that we expect to happen frequently that should not
-# trip error thresholds.
+# Statuses that we expect to happen during normal operation that should not
+# trip error circuit breakers.
 EXPECTED_STATUSES = {
     '200',
     '404',

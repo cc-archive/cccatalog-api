@@ -92,7 +92,7 @@ async def setup_io():
         config=botocore.client.Config(max_pool_connections=settings.BATCH_SIZE)
     )
     inbound_images = kafka_client.topics['inbound_images']
-    outbound_metadata = kafka_client.topics['outbound_metadata'].get_producer()
+    outbound_metadata = kafka_client.topics['resolution_updates'].get_producer()
     producer = MetadataProducer(producer=outbound_metadata)
     consumer = inbound_images.get_balanced_consumer(
         consumer_group='image_handlers',
