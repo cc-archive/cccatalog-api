@@ -30,6 +30,7 @@ async def monitor_task_list(tasks):
     last_time = time.monotonic()
     last_count = 0
     while True:
+        log.debug('monitoring')
         now = time.monotonic()
         num_completed = sum([t.done() for t in tasks])
         task_delta = num_completed - last_count

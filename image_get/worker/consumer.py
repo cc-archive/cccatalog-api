@@ -53,6 +53,7 @@ async def consume(consumer, image_processor, terminate=False):
     while True:
         num_tasks_running = sum([not t.done() for t in scheduled])
         num_to_schedule = settings.SCHEDULE_SIZE - num_tasks_running
+        log.debug(f'num_tasks_running: {num_tasks_running}')
         if num_to_schedule:
             start = timer()
             messages = poll_consumer(consumer, num_to_schedule)
@@ -74,11 +75,14 @@ async def consume(consumer, image_processor, terminate=False):
                 total_time = timer() - start
                 log.info(f'event_processing_rate={batch_size/total_time}/s')
                 consumer.commit_offsets()
+                log.debug('Committed offsets')
             else:
                 if terminate:
                     await asyncio.gather(*scheduled)
                     return
                 await asyncio.sleep(10)
+        else:
+            await asyncio.sleep(1)
 
 
 async def setup_io():
@@ -97,7 +101,7 @@ async def setup_io():
     producer = MetadataProducer(producer=resolution_producer)
     consumer = inbound_images.get_balanced_consumer(
         consumer_group='image_handlers',
-        auto_commit_enable=True,
+        auto_commit_enable=False,
         zookeeper_connect=settings.ZOOKEEPER_HOST,
         use_rdkafka=True
     )

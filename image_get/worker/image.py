@@ -1,4 +1,5 @@
 import asyncio
+import logging as log
 from functools import partial
 from io import BytesIO
 from PIL import Image, UnidentifiedImageError
