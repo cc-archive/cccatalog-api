@@ -129,7 +129,11 @@ async def test_dimensions_messaging():
         await asyncio.wait_for(producer_task, 0.01)
     except concurrent.futures.TimeoutError:
         pass
-    assert len(kafka.messages[0])
+    msg = kafka.messages[0]
+    parsed = json.loads(str(msg, 'utf-8'))
+    expected_fields = ['height', 'width', 'identifier']
+    for field in expected_fields:
+        assert field in parsed
 
 
 async def _replenish_tokens_10rps(redis):
