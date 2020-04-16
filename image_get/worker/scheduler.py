@@ -72,6 +72,8 @@ class CrawlScheduler:
         raw_sources = await self.redis.smembers('inbound_sources')
         sources = [str(x, 'utf-8') for x in raw_sources]
         num_sources = len(sources)
+        if not num_sources:
+            return {}
         proportion = math.floor(settings.MAX_TASKS / num_sources)
         to_schedule = {}
         for source in sources:
@@ -86,7 +88,6 @@ class CrawlScheduler:
         """ Repeatedly schedule image processing tasks. """
         task_schedule = defaultdict(list)
         semaphore = asyncio.BoundedSemaphore(settings.MAX_TASKS)
-        import pprint
         while True:
             to_schedule = await self._schedule(task_schedule)
             for source in to_schedule:
@@ -109,7 +110,7 @@ class CrawlScheduler:
                         )
                     )
                     task_schedule[source].append(t)
-            await asyncio.sleep(10)
+            await asyncio.sleep(5)
 
 
 async def setup_io():
