@@ -18,35 +18,7 @@ def kafka_connect():
 
 def parse_message(message):
     decoded = json.loads(str(message.value, 'utf-8'))
-    decoded['source'] = decoded['source'].lower()
     return decoded
-
-
-async def monitor_task_list(tasks):
-    # For computing average requests per second
-    num_samples = 0
-    resize_rate_sum = 0
-
-    last_time = time.monotonic()
-    last_count = 0
-    while True:
-        log.debug('monitoring')
-        now = time.monotonic()
-        num_completed = sum([t.done() for t in tasks])
-        task_delta = num_completed - last_count
-        time_delta = now - last_time
-        resize_rate = task_delta / time_delta
-
-        last_time = now
-        last_count = num_completed
-        if resize_rate > 0:
-            resize_rate_sum += resize_rate
-            num_samples += 1
-            mean = resize_rate_sum / num_samples
-            log.info(f'resize_rate_1s={round(resize_rate, 2)}/s, '
-                     f'avg_resize_rate={round(mean, 2)}/s, '
-                     f'num_completed={num_completed}')
-        await asyncio.sleep(1)
 
 
 class MetadataProducer:

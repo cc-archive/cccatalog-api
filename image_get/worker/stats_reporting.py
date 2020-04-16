@@ -18,10 +18,6 @@ resize_errors:{domain} - Number of errors that have occurred for a domain
 num_resized - Number of successfully resized images
 num_resized:{domain} - Number of successfully resized images for a domain
 
-known_tlds - A set listing every TLD workers have encountered. The crawl 
-monitor uses this set to determine which domains need to be watched. It will
-not be possible to make requests to domains that are not in this list.
-
 Domains are formatted as the TLD and suffix.
 Valid example: status60s:staticflickr.com
 Invalid example: status60s:https://staticflickr.com
@@ -89,11 +85,3 @@ class StatsManager:
             await pipe.incr(f'{SPECIFIC_SUCCESS}{source}')
             await self._record_window_samples(pipe, source, status=200)
             await pipe.execute()
-
-    async def update_sources(self, source):
-        """
-        If a TLD hasn't been seen before, add it to the set in Redis.
-        """
-        if source not in self.known_sources:
-            self.known_sources.add(source)
-            await self.redis.sadd(KNOWN_SOURCES, source)

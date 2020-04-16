@@ -23,7 +23,7 @@ fast_msgs = [
         'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca',
         'source': 'flickr'
     }
-] * 1000000
+] * 10000
 msgs = []
 msgs.extend(slow_msgs)
 msgs.extend(fast_msgs)

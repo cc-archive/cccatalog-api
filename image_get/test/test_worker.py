@@ -6,7 +6,7 @@ import concurrent.futures
 from worker.util import MetadataProducer
 from test.mocks import FakeConsumer, FakeAioSession, FakeRedis,\
     AioNetworkSimulatingSession, FakeProducer
-from worker.consumer import poll_consumer, consume
+from worker.scheduler import poll_consumer, consume
 from worker.stats_reporting import StatsManager
 from worker.image import process_image
 from worker.rate_limit import RateLimitedClientSession

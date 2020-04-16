@@ -34,6 +34,9 @@ class SourceSplitter:
     {uuid: xxxxxx, 'url': "xxxxx.org}
     topic: example2_urls:
     {uuid: xxxxxx, 'url': "xxxxx.org}
+
+    Each time a new topic is created, the name of the source gets
+    put into the 'inbound_sources' set in Redis.
     """
 
     def __init__(self, kafka_client, consumer):
@@ -57,6 +60,7 @@ class SourceSplitter:
                             .get_producer(use_rdkafka=True)
                         self.producers[source] = source_producer
                     producer = self.producers[source]
+                    del parsed['source']
                     encoded_msg = bytes(json.dumps(parsed), 'utf-8')
                     producer.produce(encoded_msg)
                     msg_count += 1
