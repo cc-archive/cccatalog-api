@@ -37,15 +37,20 @@ async def log_state(redis, info):
     """ Log general stats about the crawl """
     last_success_count = 0
     last_error_count = 0
+    last_split_count = 0
     while True:
         success_count = _parse_redis_int(await redis.get('num_resized'))
         error_count = _parse_redis_int(await redis.get('resize_errors'))
+        split_count = _parse_redis_int(await redis.get('num_split'))
+        split_delta = split_count - last_split_count
+        split_rate = split_delta / settings.LOG_FREQUENCY_SECONDS
         success_delta = success_count - last_success_count
         error_delta = error_count - last_error_count
         success_rate = success_delta / settings.LOG_FREQUENCY_SECONDS
         error_rate = error_delta / settings.LOG_FREQUENCY_SECONDS
         last_success_count = success_count
         last_error_count = error_count
+        last_split_count = split_count
         halted = _decode_bytes_list(await redis.smembers(HALTED_SET))
         state = {
             'event': 'monitoring_update',
@@ -57,7 +62,8 @@ async def log_state(redis, info):
                 'error_rps': error_rate,
                 'circuit_breaker_tripped': halted,
                 'global_max_rps': 0,
-                'processing_rate': success_rate + error_rate
+                'processing_rate': success_rate + error_rate,
+                'split_rate': split_rate
             },
             'specific': {}
         }

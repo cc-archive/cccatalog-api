@@ -11,6 +11,7 @@ boto3 = "*"
 pytest-asyncio = "*"
 aioredis = "*"
 aredis = "*"
+redis = "*"
 
 [dev-packages]
 
