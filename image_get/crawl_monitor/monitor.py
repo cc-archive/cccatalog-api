@@ -21,6 +21,10 @@ async def monitor():
 
 
 def run_splitter():
+    """
+    Takes messages from the inbound_images topic and divides each source
+    into its own queue for scheduling.
+    """
     kafka_client = kafka_connect()
     inbound_images = kafka_client.topics['inbound_images']
     consumer = inbound_images.get_balanced_consumer(

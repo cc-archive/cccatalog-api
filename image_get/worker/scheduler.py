@@ -17,8 +17,13 @@ from worker.stats_reporting import StatsManager
 class CrawlScheduler:
     """
     Watch the 'inbound_sources' Redis set for new sources to crawl. When a new
-    source arrives, schedule it for crawling. Crawls are scheduled in a way
-    that ensures cluster throughput remains high.
+    source arrives, start listening to the '{source}_urls' topic and schedule
+    them for crawling.
+
+    Crawls are scheduled in a way that ensures cluster throughput remains high.
+    The scheduler will also try to ensure that every source gets scraped
+    simultaneously instead of allowing one source to dominate all scraping
+    resources.
     """
     def __init__(self, kafka_client, redis, image_processor):
         self.kafka_client = kafka_client
@@ -74,6 +79,9 @@ class CrawlScheduler:
         from hogging all crawl capacity. Available task slots are divided
         equally between every source.
 
+        For a crawl with more than a few dozen sources, a new scheduler will
+        be required.
+
         :param task_schedule: A dict mapping each source to the set of
         scheduled asyncio tasks.
         :return: A dict of messages to schedule as image resize tasks.
@@ -113,7 +121,8 @@ class CrawlScheduler:
                 task_schedule[source] = running
                 # Add new tasks
                 if to_schedule[source]:
-                    log.info(f'Scheduling {len(to_schedule[source])} {source} downloads')
+                    log.info(f'Scheduling {len(to_schedule[source])} '
+                             f'{source} downloads')
                 for msg in to_schedule[source]:
                     t = asyncio.create_task(
                         self.image_processor(

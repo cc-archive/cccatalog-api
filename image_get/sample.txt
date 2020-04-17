@@ -1,0 +1,1 @@
+{"event": "crawl_halted", "time": "2020-04-17T16:57:52.135155", "msg": "example tripped temporary halt. Response codes: {\"b'500\": 11}", "type": "temporary", "source": "example"}

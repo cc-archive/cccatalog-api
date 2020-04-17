@@ -1,8 +1,8 @@
 FROM python:3.7
 RUN pip install pipenv
 
-WORKDIR /worker
-COPY . /worker/
+WORKDIR /monitor
+COPY . /monitor/
 RUN apt-get update
 RUN apt-get -y install librdkafka1 librdkafka-dev
 RUN RDKAFKA_INSTALL=system pipenv install

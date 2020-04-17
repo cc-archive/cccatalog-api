@@ -17,13 +17,21 @@ slow_msgs = [
     }
 ] * 9
 
+slow_msgs .extend([
+    {
+        'url': 'https://farm9.staticflickr.com/8116/8606654389_e56c706e2c_b.jpg',
+        'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca',
+        'source': 'animaldiversity'
+    }
+] * 9)
+
 fast_msgs = [
     {
         'url': 'https://farm9.staticflickr.com/8116/8606654389_e56c706e2c_b.jpg',
         'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca',
         'source': 'flickr'
     }
-] * 10000
+] * 5000
 msgs = []
 msgs.extend(slow_msgs)
 msgs.extend(fast_msgs)
