@@ -6,7 +6,6 @@ import concurrent.futures
 from worker.util import MetadataProducer
 from test.mocks import FakeConsumer, FakeAioSession, FakeRedis,\
     AioNetworkSimulatingSession, FakeProducer
-from worker.scheduler import poll_consumer, consume
 from worker.stats_reporting import StatsManager
 from worker.image import process_image
 from worker.rate_limit import RateLimitedClientSession
@@ -15,28 +14,6 @@ from functools import partial
 
 
 log.basicConfig(level=log.DEBUG)
-
-
-def test_poll():
-    """ Test message polling and parsing."""
-    consumer = FakeConsumer()
-    msgs = [
-        {
-            'url': 'http://example.org',
-            'uuid': 'c29b3ccc-ff8e-4c66-a2d2-d9fc886872ca',
-            'source': 'example'
-        },
-        {
-            'url': 'https://creativecommons.org/fake.jpg',
-            'uuid': '4bbfe191-1cca-4b9e-aff0-1d3044ef3f2d',
-            'source': 'example'
-        }
-    ]
-    encoded_msgs = [json.dumps(msg) for msg in msgs]
-    for msg in encoded_msgs:
-        consumer.insert(msg)
-    res = poll_consumer(consumer=consumer, batch_size=2)
-    assert len(res) == 2
 
 
 def validate_thumbnail(img, identifier):

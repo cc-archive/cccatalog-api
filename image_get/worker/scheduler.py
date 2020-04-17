@@ -15,6 +15,11 @@ from worker.stats_reporting import StatsManager
 
 
 class CrawlScheduler:
+    """
+    Watch the 'inbound_sources' Redis set for new sources to crawl. When a new
+    source arrives, schedule it for crawling. Crawls are scheduled in a way
+    that ensures cluster throughput remains high.
+    """
     def __init__(self, kafka_client, redis, image_processor):
         self.kafka_client = kafka_client
         self.redis = redis
@@ -78,11 +83,16 @@ class CrawlScheduler:
         num_sources = len(sources)
         if not num_sources:
             return {}
-        proportion = math.floor(settings.MAX_TASKS / num_sources)
+        # A source never gets more than 1/4th of the worker's capacity. This
+        # helps prevent starvation of lower rate limit requests and ensures
+        # that the first few sources to be discovered don't get all of the
+        # initial task slots.
+        max_share = settings.MAX_TASKS / 4
+        share = min(math.floor(settings.MAX_TASKS / num_sources), max_share)
         to_schedule = {}
         for source in sources:
             num_unfinished = self._get_num_unfinished_tasks(task_schedule, source)
-            num_to_schedule = proportion - num_unfinished
+            num_to_schedule = share - num_unfinished
             consumer = self._get_consumer(source)
             source_msgs = self._consume_n(consumer, num_to_schedule)
             to_schedule[source] = source_msgs

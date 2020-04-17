@@ -16,10 +16,10 @@ TARGET_RESOLUTION = (640, 480)
 # Number of tasks to schedule (but not necessarily execute) simultaneously.
 # Each pending resize task takes ~3kb of memory, so scheduling 1MM events means
 # consuming 3gb of memory in pending tasks alone.
-SCHEDULE_SIZE = int(os.getenv('SCHEDULE_SIZE', '2000'))
+SCHEDULE_SIZE = int(os.getenv('SCHEDULE_SIZE', '1000'))
 
 # Number of resize tasks to run concurrently.
 # Each task requires a connection to Redis, so be mindful of the max connection
 # limit. Also be mindful that running too many coroutines simultaneously can
 # be detrimental to performance.
-MAX_TASKS = 2000
+MAX_TASKS = 1000
