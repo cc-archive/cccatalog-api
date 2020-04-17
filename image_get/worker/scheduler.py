@@ -65,6 +65,10 @@ class CrawlScheduler:
         """
         Divide available task slots proportionately between sources.
 
+        This is a simple scheduler that prevents sources with low rate limits
+        from hogging all crawl capacity. Available task slots are divided
+        equally between every source.
+
         :param task_schedule: A dict mapping each source to the set of
         scheduled asyncio tasks.
         :return: A dict of messages to schedule as image resize tasks.
