@@ -16,7 +16,6 @@ count to at least the total number of worker processes across all machines.
 
 ## How do I run the tests?
 ```
-cd worker
 pipenv install
 pipenv shell
 PYTHONPATH=. pytest
@@ -197,3 +196,5 @@ example
 ```
 
 # Technical Architecture
+
+![Image crawler architecture](architecture.png)
