@@ -30,7 +30,7 @@ class MetadataProducer:
 
     pykafka is not asyncio-friendly, so we need to batch our messages together
     and intermittently send them to Kafka synchronously. Launch
-    `AsyncProducer.listen` as an asyncio task to do this.
+    `MetadataProducer.listen` as an asyncio task to do this.
     """
     def __init__(self, producer, frequency=60):
         """
