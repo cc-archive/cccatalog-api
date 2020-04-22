@@ -5,11 +5,10 @@ A distributed solution for retrieving images from a list of URLs fed to a
 message queue. Async workers consume messages from this queue and 
 store the images at the configured resolution in S3. The workers also scrape
 metadata, including image resolution and EXIF tags, and publishes the 
-results back to the queue.
+results back to Kafka.
 
 Performance is horizontally scalable; workers can be run in any number of 
-processes on any number of machines. Be sure to adjust the Kafka topic partition
-count to at least the total number of worker processes across all machines.
+processes on any number of machines.
 
 ## How do I start it?
 `docker-compose up --build`
