@@ -12,6 +12,8 @@ pytest-asyncio = "*"
 aioredis = "*"
 aredis = "*"
 redis = "*"
+PyExifTool = "*"
+exifread = "*"
 
 [dev-packages]
 

@@ -146,9 +146,9 @@ async def setup_io():
         settings.AWS_DEFAULT_REGION,
         config=botocore.client.Config(max_pool_connections=settings.MAX_TASKS)
     )
-    resolution_producer = kafka_client.topics['resolution_updates'] \
+    metadata_updates = kafka_client.topics['image_metadata_updates'] \
         .get_producer(use_rdkafka=True)
-    producer = MetadataProducer(producer=resolution_producer)
+    producer = MetadataProducer(producer=metadata_updates)
     redis_client = aredis.StrictRedis(host=settings.REDIS_HOST)
     aiosession = RateLimitedClientSession(
         aioclient=aiohttp.ClientSession(),

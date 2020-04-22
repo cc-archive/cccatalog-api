@@ -53,12 +53,22 @@ class MetadataProducer:
         msg_bytes = bytes(msg, 'utf-8')
         self._metadata_messages.append(msg_bytes)
 
+    def notify_exif_update(self, identifier, exif):
+        msg = json.dumps(
+            {
+                'exif': exif,
+                'identifier': identifier
+            }
+        )
+        msg_bytes = bytes(msg, 'utf-8')
+        self._metadata_messages.append(msg_bytes)
+
     async def listen(self):
         """ Intermittently publish queued events to Kafka. """
         while True:
             queue_size = len(self._metadata_messages)
             if queue_size:
-                log.info(f'Publishing {queue_size} image size metadata events')
+                log.info(f'Publishing {queue_size} metadata events')
                 start = time.monotonic()
                 for msg in self._metadata_messages:
                     self._image_metadata_producer.produce(msg)

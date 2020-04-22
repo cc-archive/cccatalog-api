@@ -40,6 +40,7 @@ async def process_image(
             return
         if metadata_producer:
             notify_resolution(img, identifier, metadata_producer)
+            notify_exif(img, identifier, metadata_producer)
         thumb = await loop.run_in_executor(
             None, partial(thumbnail_image, img)
         )
@@ -61,6 +62,13 @@ def notify_resolution(img: Image, identifier, metadata_producer):
     """ Collect dimensions metadata. """
     height, width = img.size
     metadata_producer.notify_image_size_update(height, width, identifier)
+
+
+def notify_exif(img: Image, identifier, metadata_producer):
+    if 'exif' in img.info:
+        exif = {hex(k): v for k, v in img.getexif().items()}
+        if exif:
+            metadata_producer.notify_exif_update(identifier, exif)
 
 
 def save_thumbnail_s3(s3_client, img: BytesIO, identifier):

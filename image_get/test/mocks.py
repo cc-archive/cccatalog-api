@@ -46,7 +46,7 @@ class FakeImageResponse:
         self.corrupt = False
 
     async def read(self):
-        # 1024 x 768 sample image
+        # 1024 x 768 sample image with exif tag 'artist = unknown'
         if self.corrupt:
             location = 'test/test_worker.py'
         else:

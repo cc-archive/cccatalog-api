@@ -63,9 +63,11 @@ The cluster expects a JSON message with the following structure:
 
 ## Output topics
 
-### `resolution_updates`
+### `image_metadata_updates`
 
-The `resolution_updates` topic contains resolution metadata discovered from crawled images.
+The `image_metadata_updates` topic contains resolution metadata discovered from crawled images.
+
+Example: discovering the resolution of an image
 
 ```
 {
@@ -75,9 +77,16 @@ The `resolution_updates` topic contains resolution metadata discovered from craw
 }
 ```
 
-### `exif_updates` topic
-
-The `exif_updates` topic contains EXIF metadata discovered from crawled images.
+Example: discovering the EXIF metadata of an image. The below example contains an artist named Alden Page and a Flash of [value](https://exiftool.org/TagNames/EXIF.html#Flash) 0, indicating it was not used. For more details on decoding EXIF, see the [list of EXIF tags](https://exiftool.org/TagNames/EXIF.html) and [PIL's EXIF tag list](https://github.com/python-pillow/Pillow/blob/master/src/PIL/ExifTags.py).
+```
+{
+    "identifier": "7563efd4-58d0-41eb-9a4f-3903d36a5225",
+    "exif": {
+        "0x13b": "Alden Page"
+        "0x9209": 0
+    }
+}
+```
 
 # Monitoring the crawl
 

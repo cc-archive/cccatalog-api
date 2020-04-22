@@ -85,8 +85,11 @@ async def test_records_errors():
         assert val == 1 or len(val) == 1
 
 
+@pytest.fixture
 @pytest.mark.asyncio
-async def test_dimensions_messaging():
+async def producer_fixture():
+    # Run a processing task and capture the metadata results in a mock kafka
+    # producer
     redis = FakeRedis()
     stats = StatsManager(redis)
     kafka = FakeProducer()
@@ -106,8 +109,19 @@ async def test_dimensions_messaging():
         await asyncio.wait_for(producer_task, 0.01)
     except concurrent.futures.TimeoutError:
         pass
-    msg = kafka.messages[0]
-    parsed = json.loads(str(msg, 'utf-8'))
+    return kafka
+
+
+def test_resolution_messaging(producer_fixture):
+    resolution_msg = producer_fixture.messages[0]
+    parsed = json.loads(str(resolution_msg, 'utf-8'))
     expected_fields = ['height', 'width', 'identifier']
     for field in expected_fields:
         assert field in parsed
+
+
+def test_exif_messaging(producer_fixture):
+    exif_msg = producer_fixture.messages[1]
+    parsed = json.loads(str(exif_msg, 'utf-8'))
+    artist_key = '0x13b'
+    assert parsed['exif'][artist_key] == 'unknown'
