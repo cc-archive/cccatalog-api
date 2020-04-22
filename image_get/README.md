@@ -215,6 +215,6 @@ Rate limits for each source are determined by the crawl monitor. It sets rate li
 Once an image has been downloaded, the worker performs several other operations on the image:
 - The image is resized to `settings.TARGET_RESOLUTION` and uploaded to S3.
 - The resolution of the image is collected and pushed to the `image_metadata_updates` topic.
-- The exif metadata of the iamge is collected and pushed to the `image_metadata_updates` topic.
+- The exif metadata of the image is collected and pushed to the `image_metadata_updates` topic.
 
 Once the task has been completed, stats are pushed to Redis. While this is occurring, the Crawl Monitor is listening for errors; if an unsafe number of errors occurs (as described in "The error circuit breaker" section), crawling is halted. The crawl monitor also keeps a detailed log of the status of the crawl as it progresses.
