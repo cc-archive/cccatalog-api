@@ -207,3 +207,14 @@ example
 # Technical Architecture
 
 ![Image crawler architecture](architecture.png)
+
+Images URLs are scheduled for crawling in the `inbound_images` topic. The Splitter process in the crawl monitor funnels URLs into queues based on their source keys (e.g. `source: flickr`, `source: met` get put into the respective `flickr_urls` and `met_urls` topics). Splitting by source is necessary to allow the worker to crawl all domains simultaneously and prevent starvation from "slow" sources with low rate limits.
+
+Rate limits for each source are determined by the crawl monitor. It sets rate limits in proportion to the size of each domain (number of images), which it learns from the CC Catalog API `sources` endpoint. When a target rate limit has been established, the crawl monitor regulates worker rate limits by replenishing [token buckets](https://en.wikipedia.org/wiki/Token_bucket) for each source every second. Before making a request from a source, the worker checks the token bucket for the source. If no token is available, the request will block until tokens are replenished.
+
+Once an image has been downloaded, the worker performs several other operations on the image:
+- The image is resized to `settings.TARGET_RESOLUTION` and uploaded to S3.
+- The resolution of the image is collected and pushed to the `image_metadata_updates` topic.
+- The exif metadata of the iamge is collected and pushed to the `image_metadata_updates` topic.
+
+Once the task has been completed, stats are pushed to Redis. While this is occurring, the Crawl Monitor is listening for errors; if an unsafe number of errors occurs (as described in "The error circuit breaker" section), crawling is halted. The crawl monitor also keeps a detailed log of the status of the crawl as it progresses.
