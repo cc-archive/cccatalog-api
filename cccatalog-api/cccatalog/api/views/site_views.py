@@ -28,7 +28,7 @@ URL = 'domain_name'
 HEALTH_CACHE_TTL = 10
 
 
-@method_decorator(cache_page(10), name='get')
+@method_decorator(cache_page(HEALTH_CACHE_TTL), name='get')
 class HealthCheck(APIView):
     """
     Returns a `200 OK` response if the server is running and `image` 
