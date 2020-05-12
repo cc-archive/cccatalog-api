@@ -32,7 +32,7 @@ Before you start writing code, make sure there is an issue open. Pull requests w
 
 If you want to get started contributing code to this project but don't know exactly what to work on, we compiled a good list of issues labeled as [Good first issues](https://github.com/creativecommons/cccatalog-frontend/labels/good%20first%20issue) which are small in scope and not so complex to solve. There is also issues labeld as [Help wanted](https://github.com/creativecommons/cccatalog-frontend/labels/help%20wanted) which can be a bit more complex but are good examples of thigns we are currently accepting help from the community.
 
-Any code modifications will have to be accompanied by the appropriate unit tests. This will be checked and verified during code review. Once the Pull Reques is opened, our CI server will run the unit test suite and run a code linter to verify that the code follows the coding guidelines.
+Any code modifications will have to be accompanied by the appropriate unit tests. This will be checked and verified during code review. Once the Pull Request is opened, our CI server will run the unit test suite and run a code linter to verify that the code follows the coding guidelines.
 
 If you want to run the unit tests and linter on your machine, run the following commands:
 

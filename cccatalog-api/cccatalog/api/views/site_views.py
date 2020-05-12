@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 from rest_framework import serializers
-from cccatalog.api.controllers.search_controller import get_providers
+from cccatalog.api.controllers.search_controller import get_providers, es
 from cccatalog.api.serializers.oauth2_serializers import\
     OAuth2RegistrationSerializer, OAuth2RegistrationSuccessful, OAuth2KeyInfo
 from drf_yasg.utils import swagger_auto_schema
@@ -17,17 +17,22 @@ from cccatalog.api.utils.throttle import TenPerDay, OnePerSecond
 from cccatalog.api.utils.oauth2_helper import get_token_info
 from cccatalog.settings import THUMBNAIL_PROXY_URL, THUMBNAIL_WIDTH_PX
 from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 from django.http import HttpResponse
 
 IDENTIFIER = 'provider_identifier'
 NAME = 'provider_name'
 FILTER = 'filter_content'
 URL = 'domain_name'
+HEALTH_CACHE_TTL = 10
 
 
+@method_decorator(cache_page(10), name='get')
 class HealthCheck(APIView):
     """
-    Returns a `200 OK` response if the server is running.
+    Returns a `200 OK` response if the server is running and `image` 
+    index exists and a `500 Internal Server Error` if either of the condition fails.
 
     This endpoint is used in production to ensure that the server should receive
     traffic. If no response is provided, the server is deregistered from the
@@ -36,8 +41,14 @@ class HealthCheck(APIView):
     swagger_schema = None
 
     def get(self, request, format=None):
-        return Response('', status=200)
-
+        es_conn = es
+        image_index_exists = es_conn.indices.exists(index=["image"])
+        if image_index_exists:
+            return Response('', status=200)
+        else:
+            log.error('The health check failed because the cluster image index is either unhealthy or non-existent')
+            return Response('', status=500)
+    
 
 class AboutImageResponse(serializers.Serializer):
     """ The full image search response. """

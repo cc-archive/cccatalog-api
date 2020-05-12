@@ -3,6 +3,8 @@ cccatalog-api contributors (sorted alphabetically by last name)
 
 * **[Liza Daley](https://github.com/lizadaly)**
   * Built CC Search prototype, bits of which live on in this repository to this day
+* **[Princewill Onyenanu](https://github.com/madewithkode)**
+  * Implemented Elasticsearch `image` index availability check on `/healthcheck` view
 * **[Alden Page](https://github.com/aldenstpage)**
   * Author and maintainer of current implementation
 * **[Paulo Rosário](https://github.com/paulofilip3)**
