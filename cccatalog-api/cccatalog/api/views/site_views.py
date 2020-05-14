@@ -26,13 +26,14 @@ NAME = 'provider_name'
 FILTER = 'filter_content'
 URL = 'domain_name'
 HEALTH_CACHE_TTL = 10
+ALLOWED_INDEX_STATUSES = ['green','yellow']
 
 
 @method_decorator(cache_page(HEALTH_CACHE_TTL), name='get')
 class HealthCheck(APIView):
     """
     Returns a `200 OK` response if the server is running and `image` 
-    index exists and a `500 Internal Server Error` if either of the condition fails.
+    index is healthy and a `500 Internal Server Error` if either of the condition fails.
 
     This endpoint is used in production to ensure that the server should receive
     traffic. If no response is provided, the server is deregistered from the
@@ -42,12 +43,21 @@ class HealthCheck(APIView):
 
     def get(self, request, format=None):
         es_conn = es
-        image_index_exists = es_conn.indices.exists(index=["image"])
+        image_index_exists = es_conn.indices.exists(index=['image'])
         if image_index_exists:
-            return Response('', status=200)
+            health_check = es_conn.cluster.health(index='image')
+            index_status = health_check.get("status")
+            if index_status not in ALLOWED_INDEX_STATUSES:
+                log.error('The health check failed because the status of the image index is unhealthy.')
+                response_data = {"error": "IndexUnhealthy", "detail": "The status of the image index is unhealthy."}
+                return Response(response_data, status=500)
+            else:
+                return Response(health_check, status=200)
         else:
-            log.error('The health check failed because the cluster image index is either unhealthy or non-existent')
-            return Response('', status=500)
+            response_data = {"error": "IndexMissing", "detail": "The image index does not exist. Index data to Elasticsearch."}
+            log.error('The health check failed because the cluster image index is non-existent')
+            return Response(response_data, status=500)
+        
     
 
 class AboutImageResponse(serializers.Serializer):
