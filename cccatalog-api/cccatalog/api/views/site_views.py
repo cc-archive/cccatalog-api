@@ -49,16 +49,15 @@ class HealthCheck(APIView):
             index_status = health_check.get("status")
             if index_status not in ALLOWED_INDEX_STATUSES:
                 log.error('The health check failed because the status of the image index is unhealthy.')
-                response_data = {"error": "IndexUnhealthy", "detail": "The status of the image index is unhealthy."}
+                response_data = {"status": "IndexUnhealthy", "detail": "The image index is unhealthy."}
                 return Response(response_data, status=500)
             else:
-                return Response(health_check, status=200)
+                response_data = {"status": "IndexHealthy", "detail": "The image index is healthy."}
+                return Response(response_data, status=200)
         else:
-            response_data = {"error": "IndexMissing", "detail": "The image index does not exist. Index data to Elasticsearch."}
+            response_data = {"status": "IndexMissing", "detail": "The image index does not exist. Index data to Elasticsearch."}
             log.error('The health check failed because the cluster image index is non-existent')
             return Response(response_data, status=500)
-        
-    
 
 class AboutImageResponse(serializers.Serializer):
     """ The full image search response. """
