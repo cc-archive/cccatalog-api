@@ -1,5 +1,4 @@
 import uuid
-
 import psycopg2
 import os
 import sys
@@ -7,9 +6,10 @@ import logging as log
 import time
 import argparse
 import datetime
+import elasticsearch
 from aws_requests_auth.aws_auth import AWSRequestsAuth
-from elasticsearch import Elasticsearch, RequestsHttpConnection, NotFoundError,\
-    helpers
+from elasticsearch import Elasticsearch, RequestsHttpConnection, \
+    NotFoundError, helpers
 from elasticsearch.exceptions \
     import ConnectionError as ElasticsearchConnectionError
 from elasticsearch_dsl import connections, Search
@@ -20,6 +20,7 @@ from ingestion_server.elasticsearch_models import \
 from ingestion_server.es_mapping import create_mapping
 from ingestion_server.distributed_reindex_scheduler import \
     schedule_distributed_index
+from collections import deque
 
 """
 A utility for indexing data to Elasticsearch. For each table to
@@ -69,7 +70,7 @@ def elasticsearch_connect(timeout=300):
     """
     while True:
         try:
-            return _elasticsearch_connect(timeout)
+            return _elasticsearch_connect()
         except ElasticsearchConnectionError as e:
             log.exception(e)
             log.error('Reconnecting to Elasticsearch in 5 seconds. . .')
@@ -77,7 +78,7 @@ def elasticsearch_connect(timeout=300):
             continue
 
 
-def _elasticsearch_connect(timeout=300):
+def _elasticsearch_connect():
     """
     Connect to configured Elasticsearch domain.
 
@@ -103,9 +104,6 @@ def _elasticsearch_connect(timeout=300):
         host=ELASTICSEARCH_URL,
         port=ELASTICSEARCH_PORT,
         connection_class=RequestsHttpConnection,
-        timeout=timeout,
-        max_retries=10,
-        retry_on_timeout=True,
         http_auth=auth,
         wait_for_status='yellow'
     )
@@ -213,6 +211,30 @@ class TableIndexer:
             )
             self.replicate(table, dest_idx, query)
 
+    def _bulk_upload(self, es_batch):
+        max_attempts = 4
+        attempts = 0
+        # Initial time to wait between indexing attempts
+        # Grows exponentially
+        cooloff = 5
+        while True:
+            try:
+                deque(helpers.parallel_bulk(self.es, es_batch, chunk_size=400))
+            except elasticsearch.ElasticsearchException:
+                # Something went wrong during indexing.
+                log.warning(
+                    f"Elasticsearch rejected bulk query. We will retry in"
+                    f" {cooloff}s. Attempt {attempts}. Details: ",
+                    exc_info=True
+                )
+                time.sleep(cooloff)
+                cooloff *= 2
+                if attempts >= max_attempts:
+                    raise ValueError('Exceeded maximum bulk index retries')
+                attempts += 1
+                continue
+            break
+
     def replicate(self, table, dest_index, query):
         """
         Replicate records from a given query.
@@ -254,7 +276,10 @@ class TableIndexer:
                 num_docs = len(es_batch)
                 log.info('Pushing {} docs to Elasticsearch.'.format(num_docs))
                 # Bulk upload to Elasticsearch in parallel.
-                list(helpers.parallel_bulk(self.es, es_batch, chunk_size=400))
+                try:
+                    self._bulk_upload(es_batch)
+                except ValueError:
+                    log.error('Failed to index chunk.')
                 upload_time = time.time() - push_start_time
                 upload_rate = len(es_batch) / upload_time
                 log.info(
@@ -264,7 +289,7 @@ class TableIndexer:
                 num_converted_documents += len(chunk)
                 total_indexed_so_far += len(chunk)
                 if self.progress is not None:
-                    self.progress.value =\
+                    self.progress.value = \
                         (total_indexed_so_far / num_to_index) * 100
             log.info('Synchronized ' + str(num_converted_documents) + ' from '
                      'table \'' + table + '\' to Elasticsearch')
@@ -312,6 +337,28 @@ class TableIndexer:
         """
         es = elasticsearch_connect()
         indices = set(es.indices.get('*'))
+        # Re-enable replicas and refresh.
+        es.indices.refresh(index=write_index)
+        es.indices.put_settings(
+            index=write_index,
+            body={
+                "index": {
+                    "number_of_replicas": 1
+                }
+            }
+        )
+        # Cluster status will always be yellow in development environments
+        # because there will only be one node available. In production, there
+        # are many nodes, and the index should not be promoted until all
+        # shards have been initialized.
+        environment = os.getenv('ENVIRONMENT', 'local')
+        if environment != 'local':
+            log.info('Waiting for replica shards. . .')
+            es.cluster.health(
+                index=write_index,
+                wait_for_status='green',
+                timeout="3h"
+            )
         # If the index exists already and it's not an alias, delete it.
         if live_alias in indices:
             log.warning('Live index already exists. Deleting and realiasing.')
@@ -405,7 +452,9 @@ class TableIndexer:
 
         documents = []
         for row in pg_chunk:
-            if not row[schema['removed_from_source']]:
+            if not (
+                row[schema['removed_from_source']] or row[schema['deleted']]
+            ):
                 converted = model.database_row_to_elasticsearch_doc(row, schema)
                 converted = converted.to_dict(include_meta=True)
                 if dest_index:

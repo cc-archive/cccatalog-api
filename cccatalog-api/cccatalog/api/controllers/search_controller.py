@@ -6,22 +6,22 @@ from elasticsearch_dsl.response import Response, Hit
 from elasticsearch_dsl.query import Query
 from cccatalog import settings
 from django.core.cache import cache
-from cccatalog.api.models import ContentProvider
+from django.urls import reverse
+import cccatalog.api.models as models
+import logging as log
 from rest_framework import serializers
-from cccatalog.settings import THUMBNAIL_PROXY_URL, PROXY_THUMBS
+from cccatalog.settings import PROXY_THUMBS
 from cccatalog.api.utils.validate_images import validate_images
 from cccatalog.api.utils.dead_link_mask import get_query_mask, get_query_hash
 from itertools import accumulate
 from typing import Tuple, List, Optional
 from math import ceil
-import logging
 
 ELASTICSEARCH_MAX_RESULT_WINDOW = 10000
-CACHE_TIMEOUT = 10
+CACHE_TIMEOUT = 60 * 20
 DEAD_LINK_RATIO = 1 / 2
 THUMBNAIL = 'thumbnail'
 URL = 'url'
-THUMBNAIL_WIDTH_PX = 600
 PROVIDER = 'provider'
 DEEP_PAGINATION_ERROR = 'Deep pagination is not allowed.'
 QUERY_SPECIAL_CHARACTER_ERROR = 'Unescaped special characters are not allowed.'
@@ -128,10 +128,12 @@ def _post_process_results(s, start, end, page_size, search_results,
             else:
                 to_proxy = URL
             original = res[to_proxy]
-            proxied = '{proxy_url}/{width}/{original}'.format(
-                proxy_url=THUMBNAIL_PROXY_URL,
-                width=THUMBNAIL_WIDTH_PX,
-                original=original
+            ext = res["url"].split(".")[-1]
+            proxied = "https://{}{}".format(
+                request.get_host(),
+                reverse('thumbs', kwargs={
+                    'identifier': "{}.{}".format(res["identifier"], ext)
+                })
             )
             res[THUMBNAIL] = proxied
         results.append(res)
@@ -230,11 +232,14 @@ def search(search_params, index, page_size, ip, request,
         '',
         term={'field': 'creator'}
     )
+    # Exclude mature content unless explicitly enabled by the requester
+    if not search_params.data['mature']:
+        s = s.exclude('term', mature=True)
     # Hide data sources from the catalog dynamically.
     filter_cache_key = 'filtered_providers'
     filtered_providers = cache.get(key=filter_cache_key)
     if not filtered_providers:
-        filtered_providers = ContentProvider.objects\
+        filtered_providers = models.ContentProvider.objects\
             .filter(filter_content=True)\
             .values('provider_identifier')
         cache.set(
@@ -242,8 +247,8 @@ def search(search_params, index, page_size, ip, request,
             timeout=CACHE_TIMEOUT,
             value=filtered_providers
         )
-    for filtered in filtered_providers:
-        s = s.exclude('match', provider=filtered['provider_identifier'])
+    to_exclude = [f['provider_identifier'] for f in filtered_providers]
+    s = s.exclude('terms', provider=to_exclude)
 
     # Search either by generic multimatch or by "advanced search" with
     # individual field-level queries specified.
@@ -325,12 +330,13 @@ def search(search_params, index, page_size, ip, request,
     s.extra(track_scores=True)
     # Route users to the same Elasticsearch worker node to reduce
     # pagination inconsistencies and increase cache hits.
-    s = s.params(preference=str(ip))
+    s = s.params(preference=str(ip), request_timeout=7)
     # Paginate
     start, end = _get_query_slice(s, page_size, page, filter_dead)
     s = s[start:end]
     try:
         search_response = s.execute()
+        log.info(f'query={s.to_dict()}, es_took_ms={search_response.took}')
     except RequestError as e:
         raise ValueError(e)
     results = _post_process_results(
@@ -368,7 +374,10 @@ def _query_suggestions(response: Response):
     """
     Get suggestions on a misspelt query
     """
-    obj_suggestion = response.to_dict()['suggest']
+    res = response.to_dict()
+    if 'suggest' not in res:
+        return None
+    obj_suggestion = res['suggest']
     if not obj_suggestion['get_suggestion']:
         suggestion = None
     else:
@@ -404,6 +413,8 @@ def related_images(uuid, index, request, filter_dead):
         min_term_freq=1,
         max_query_terms=50
     )
+    # Never show mature content in recommendations.
+    s = s.exclude('term', mature=True)
     page_size = 10
     page = 1
     start, end = _get_query_slice(s, page_size, page, filter_dead)
@@ -441,13 +452,15 @@ def get_providers(index):
         # Invalidate old provider format.
         cache.delete(key=provider_cache_name)
     if not providers:
-        elasticsearch_maxint = 2147483647
+        # Don't increase `size` without reading this issue first:
+        # https://github.com/elastic/elasticsearch/issues/18838
+        size = 100
         agg_body = {
             'aggs': {
                 'unique_providers': {
                     'terms': {
                         'field': 'provider.keyword',
-                                 'size': elasticsearch_maxint,
+                        'size': size,
                         "order": {
                             "_key": "desc"
                         }
@@ -455,13 +468,12 @@ def get_providers(index):
                 }
             }
         }
-        s = Search.from_dict(agg_body)
-        s = s.index(index)
         try:
-            results = s.execute().aggregations['unique_providers']['buckets']
+            results = es.search(index=index, body=agg_body, request_cache=True)
+            buckets = results['aggregations']['unique_providers']['buckets']
         except NotFoundError:
-            results = [{'key': 'none_found', 'doc_count': 0}]
-        providers = {result['key']: result['doc_count'] for result in results}
+            buckets = [{'key': 'none_found', 'doc_count': 0}]
+        providers = {result['key']: result['doc_count'] for result in buckets}
         cache.set(
             key=provider_cache_name,
             timeout=CACHE_TIMEOUT,
@@ -489,7 +501,7 @@ def _elasticsearch_connect():
         port=settings.ELASTICSEARCH_PORT,
         connection_class=RequestsHttpConnection,
         timeout=10,
-        max_retries=99,
+        max_retries=1,
         retry_on_timeout=True,
         http_auth=auth,
         wait_for_status='yellow'
