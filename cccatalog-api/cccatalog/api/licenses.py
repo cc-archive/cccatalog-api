@@ -28,7 +28,10 @@ ATTRIBUTION = \
 
 def get_license_url(_license, version, meta_data=None):
     if meta_data and 'license_url' in meta_data:
-        return meta_data['license_url']
+        if meta_data['license_url'] is not None:
+            return meta_data['license_url']
+        else:
+            return f'https://creativecommons.org/licenses/{_license}/{version}/'
     if _license.lower() == 'pdm':
         return 'https://creativecommons.org/publicdomain/mark/1.0/'
     else:
