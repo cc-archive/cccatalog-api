@@ -1,3 +1,8 @@
+"""
+Utilities for request object
+"""
+
+
 def _get_user_ip(request):
     """
     Read request headers to find the correct IP address.
