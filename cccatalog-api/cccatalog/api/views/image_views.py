@@ -9,14 +9,13 @@ from drf_yasg.utils import swagger_auto_schema
 from cccatalog.api.models import Image, ContentProvider, DeletedImage, \
     ImageReport
 from cccatalog.api.utils import ccrel
-from cccatalog.api.utils.view_count import track_model_views
 from cccatalog.api.serializers.image_serializers import\
     ImageSearchResultsSerializer, ImageSerializer,\
     InputErrorSerializer, ImageSearchQueryStringSerializer,\
     WatermarkQueryStringSerializer, ReportImageSerializer,\
     OembedSerializer
 from cccatalog.settings import DETAIL_PROXY_URL
-from cccatalog.api.utils.view_count import _get_user_ip
+from cccatalog.api.utils.request import _get_user_ip
 from cccatalog.api.utils.watermark import watermark
 from django.http.response import HttpResponse, FileResponse
 import cccatalog.api.controllers.search_controller as search_controller
@@ -148,8 +147,7 @@ class ImageDetail(GenericAPIView, RetrieveModelMixin):
                              200: ImageSerializer,
                              404: 'Not Found'
                          })
-    @track_model_views(Image)
-    def get(self, request, identifier, format=None, view_count=0):
+    def get(self, request, identifier, format=None):
         """ Get the details of a single list. """
         resp = self.retrieve(request, identifier)
         # Proxy insecure HTTP images at full resolution.

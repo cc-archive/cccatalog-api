@@ -104,8 +104,6 @@ class Image(OpenLedgerModel):
 
     meta_data = JSONField(blank=True, null=True)
 
-    view_count = models.IntegerField(default=0)
-
     watermarked = models.NullBooleanField(blank=True, null=True)
 
     @property
