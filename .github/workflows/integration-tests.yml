@@ -5,7 +5,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
     - name: run docker-compose
       run: docker-compose up --build -d
     - name: Wait for API to come up
