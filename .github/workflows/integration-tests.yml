@@ -20,7 +20,10 @@ jobs:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v1
     - name: Install dependencies
-      run: pip install pytest pipenv && PIPENV_PIPFILE=./cccatalog-api/Pipfile pipenv install --system --deploy --dev &
+      run: |
+        pip install pytest pipenv
+        apt-get install libexempi3
+        PIPENV_PIPFILE=./cccatalog-api/Pipfile pipenv install --system --deploy --dev &
     - name: Start API
       run: docker-compose up --build -d
     - name: Wait for API to come up
