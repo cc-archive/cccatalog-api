@@ -2,6 +2,18 @@ name: Automated tests
 on: [push]
 
 jobs:
+  Style:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-python@v1
+    - name: Install pycodestyle
+      run: pip install pycodestyle
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Check API style
+      run: pycodestyle cccatalog-api/cccatalog --exclude='cccatalog-api/cccatalog/api/migrations' --max-line-length=80 --ignore=E402,E702
+    - name: Check ingestion-server style
+      run: pycodestyle ingestion_server/ingestion_server --max-line-length=80 --ignore=E402
   Tests:
     runs-on: ubuntu-latest
     steps:
