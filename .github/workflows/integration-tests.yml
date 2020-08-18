@@ -20,14 +20,14 @@ jobs:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v1
     - name: Install dependencies
-      run: pip install pytest pipenv && pipenv install --system --deploy --dev &
+      run: pip install pytest pipenv && PIPENV_PIPFILE=./cccatalog-api/Pipfile pipenv install --system --deploy --dev &
     - name: Start API
       run: docker-compose up --build -d
     - name: Wait for API to come up
       run: bash -c 'while [[ "$(curl --insecure -s -o /dev/null -w ''%{http_code}'' http://localhost:8000/healthcheck)" != "200" ]]; do sleep 10; done'
-    - name: Load test data
+    - name: Ingest and index test data
       run: ./load_sample_data.sh
-    - name: Wait for data to be loaded
+    - name: Wait for data to be indexed in Elasticsearch
       run: bash -c 'while [[ "$(curl --insecure -s -o /dev/null -w ''%{http_code}'' http://localhost:8000/v1/images?q=test)" != "200" ]]; do sleep 5; done'
     - name: Run API tests
       run: cd cccatalog-api && test/run_test.sh
