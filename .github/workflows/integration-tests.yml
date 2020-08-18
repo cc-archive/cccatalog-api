@@ -5,9 +5,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
+    - name: Check out the project
       uses: actions/checkout@v2
-    - name: run docker-compose
+    - name: Start API
       run: docker-compose up --build -d
     - name: Wait for API to come up
       run: bash -c 'while [[ "$(curl --insecure -s -o /dev/null -w ''%{http_code}'' http://localhost:8000/healthcheck)" != "200" ]]; do sleep 10; done'

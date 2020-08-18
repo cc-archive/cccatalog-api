@@ -5,6 +5,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+    - name: Install pycodestyle
+      run: pip install pycodestyle
     - name: Checkout
       uses: actions/checkout@v2
     - name: Check API style
