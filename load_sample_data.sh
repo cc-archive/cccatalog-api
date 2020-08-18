@@ -2,7 +2,7 @@
 CCCAPI_CONTAINER_NAME="${CCCAPI_CONTAINER_NAME:-cccatalog-api_web_1}"
 ANALYTICS_CONTAINER_NAME="${ANALYTICS_CONTAINER_NAME:-cccatalog-api_analytics_1}"
 # Set up API database and upstream
-docker exec -ti $CCCAPI_CONTAINER_NAME /bin/bash -c 'python3 manage.py migrate --noinput'
+docker exec -i $CCCAPI_CONTAINER_NAME /bin/bash -c 'python3 manage.py migrate --noinput'
 # Create a user for integration testing.
 docker exec -i $CCCAPI_CONTAINER_NAME /bin/bash <<'EOF'
 python3 manage.py shell -c "from django.contrib.auth.models import User
