@@ -17,8 +17,8 @@ jobs:
   Tests:
     runs-on: ubuntu-latest
     steps:
-    - name: Check out the project
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
     - name: Start API
       run: docker-compose up --build -d
     - name: Wait for API to come up
