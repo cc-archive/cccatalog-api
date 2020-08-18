@@ -34,3 +34,5 @@ jobs:
       run: bash -c 'while [[ "$(curl --insecure -s -o /dev/null -w ''%{http_code}'' http://localhost:8000/v1/images?q=test)" != "200" ]]; do sleep 5; done'
     - name: Run API tests
       run: cd cccatalog-api && test/run_test.sh
+    - name: Dump logs
+      run: docker-compose logs
