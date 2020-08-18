@@ -2,7 +2,7 @@ name: Automated tests
 on: [push]
 
 jobs:
-  test:
+  Tests:
     runs-on: ubuntu-latest
     steps:
     - name: Check out the project

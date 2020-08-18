@@ -2,7 +2,7 @@ name: Style check
 on: [push]
 
 jobs:
-  test:
+  Style:
     runs-on: ubuntu-latest
     steps:
     - name: Install pycodestyle
