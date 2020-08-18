@@ -15,9 +15,5 @@ jobs:
       run: ./load_sample_data.sh
     - name: Wait for data to be loaded
       run: bash -c 'while [[ "$(curl --insecure -s -o /dev/null -w ''%{http_code}'' http://localhost:8000/v1/images?q=test)" != "200" ]]; do sleep 5; done'
-    - name: Check API style
-      run: pycodestyle cccatalog-api/cccatalog --exclude='cccatalog-api/cccatalog/api/migrations' --max-line-length=80 --ignore=E402,E702
-    - name: Check ingestion-server style
-      run: pycodestyle ingestion_server/ingestion_server --max-line-length=80 --ignore=E402
     - name: Run API tests
       run: cd cccatalog-api && test/run_test.sh
