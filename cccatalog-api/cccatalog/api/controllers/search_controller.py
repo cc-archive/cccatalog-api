@@ -396,7 +396,7 @@ def get_sources(index):
     try:
         sources = cache.get(key=source_cache_name)
     except ValueError:
-        cache_fetch_failed =True
+        cache_fetch_failed = True
         sources = None
     if type(sources) == list or cache_fetch_failed:
         # Invalidate old provider format.
