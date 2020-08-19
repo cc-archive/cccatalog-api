@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 CCCAPI_CONTAINER_NAME="${CCCAPI_CONTAINER_NAME:-cccatalog-api_web_1}"
 ANALYTICS_CONTAINER_NAME="${ANALYTICS_CONTAINER_NAME:-cccatalog-api_analytics_1}"
 # Set up API database and upstream
