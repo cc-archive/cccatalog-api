@@ -118,6 +118,7 @@ def test_link_shortener_resolve(link_shortener_fixture):
 
 def test_stats():
     response = requests.get(API_URL + '/v1/sources?type=images', verify=False)
+    pprint.pprint(response.text)
     parsed_response = json.loads(response.text)
     assert response.status_code == 200
     num_images = 0
