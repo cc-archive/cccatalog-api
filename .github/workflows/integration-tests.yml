@@ -34,3 +34,5 @@ jobs:
       run: bash -c 'while [[ "$(curl -sb -H "Accept:application/json" http://localhost:9200/_cat/aliases/image | grep -c image-)" == "0" ]]; do sleep 5; done'
     - name: Run API tests
       run: cd cccatalog-api && test/run_test.sh
+    - name: Run analytics tests
+      run: cd ../analytics && API_URL='analytics:8090' pytest tests.py --disable-pytest-warnings
