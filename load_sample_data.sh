@@ -28,5 +28,4 @@ EOF
 # Ingest and index the data
 curl -XPOST localhost:8001/task -H "Content-Type: application/json" -d '{"model": "image", "action": "INGEST_UPSTREAM"}'
 # Clear source cache since it's out of date after data has been loaded
-while [[ "$(curl -sb -H "Accept:application/json" http://localhost:9200/_cat/aliases/image | grep -c image-)" == "0" ]]; do sleep 5; done
 docker exec -i cccatalog-api_cache_1 /bin/bash -c "echo \"del :1:sources-image\" | redis-cli"
