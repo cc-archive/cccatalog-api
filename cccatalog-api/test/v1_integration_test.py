@@ -6,6 +6,7 @@ import uuid
 import time
 import cccatalog.settings
 import xml.etree.ElementTree as ET
+import pprint
 from django.db.models import Max
 from django.urls import reverse
 from cccatalog.api.licenses import LICENSE_GROUPS
@@ -83,7 +84,10 @@ def test_search_consistency():
 
 def test_image_detail(search_fixture):
     test_id = search_fixture['results'][0]['id']
+    print(f'image detail id: {test_id}')
     response = requests.get(API_URL + '/v1/images/{}'.format(test_id), verify=False)
+    if response.status_code != 200:
+        pprint.pprint(search_fixture)
     assert response.status_code == 200
 
 
