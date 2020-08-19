@@ -84,8 +84,6 @@ def test_search_consistency():
 
 def test_image_detail(search_fixture):
     test_id = search_fixture['results'][0]['id']
-    print(f'image detail id: {test_id}')
-    pprint.pprint(search_fixture)
     response = requests.get(API_URL + '/v1/images/{}'.format(test_id), verify=False)
     assert response.status_code == 200
 
