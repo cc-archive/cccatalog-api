@@ -128,6 +128,14 @@ class ImageSearchQueryStringSerializer(serializers.Serializer):
                   " `{}`".format(list(get_sources('image').keys())),
         required=False
     )
+    sources = serializers.CharField(
+        label="legacy_sources",
+        source="source",
+        help_text="(Deprecated by `source`) A comma separated list of data"
+                  "sources to search. Valid inputs:"
+                  " `{}`".format(list(get_sources('image').keys())),
+        required=False
+    )
     extension = serializers.CharField(
         label="extension",
         help_text="A comma separated list of desired file extensions.",
@@ -206,7 +214,7 @@ class ImageSearchQueryStringSerializer(serializers.Serializer):
             return 20
 
     @staticmethod
-    def validate_source(input_providers):
+    def _validate_source(input_providers):
         allowed_providers = list(get_sources('image').keys())
 
         for input_provider in input_providers.split(','):
@@ -215,6 +223,12 @@ class ImageSearchQueryStringSerializer(serializers.Serializer):
                     "Provider \'{}\' does not exist.".format(input_providers)
                 )
         return input_providers.lower()
+
+    def validate_source(self, input_providers):
+        return self._validate_source(input_providers)
+
+    def validate_sources(self, input_providers):
+        return self._validate_source(input_providers)
 
     @staticmethod
     def validate_extension(value):
