@@ -1,3 +1,6 @@
+import rdflib
+from django.core.cache import cache
+
 LICENSES = (
     ("BY", "Attribution"),
     ("BY-NC", "Attribution NonCommercial"),
@@ -34,3 +37,29 @@ def get_license_url(_license, version, meta_data=None):
         return 'https://creativecommons.org/publicdomain/mark/1.0/'
     else:
         return f'https://creativecommons.org/licenses/{_license}/{version}/'
+
+def parse_rdf_cache_license(rdf_path):
+    g = rdflib.Graph()
+    result = g.parse(rdf_path)
+    licenses = []
+    for s, p, o in g:
+        license_version = ""
+        license_url = ""
+        jurisdiction = ""
+        language_code = ""
+        s = s.split("/")
+        license_url = "/".join(s[0:6])
+        license_version = s[5]
+        if len(s) >= 8:
+            jurisdiction = s[-2]
+        if type(o) == rdflib.Literal:
+            language_code = o.language
+        licenses.append({
+            'license_url': license_url,
+            'license_version': license_version,
+            'jurisdiction': jurisdiction,
+            'language_code': language_code
+        })
+    if 'licenses' not in cache:
+        cache.set('licenses', licenses)
+        

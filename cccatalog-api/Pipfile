@@ -38,9 +38,6 @@ djangorestframework-xml = "*"
 gevent = "*"
 django-storages = "*"
 boto3 = "*"
-
-[packages.future]
-version = "*"
-
-[packages.ipaddress]
-version = "*"
+rdflib = "*"
+future = {version = "*"}
+ipaddress = {version = "*"}

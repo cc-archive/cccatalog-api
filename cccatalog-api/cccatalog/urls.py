@@ -22,6 +22,7 @@ from cccatalog.api.views.site_views import HealthCheck, ImageStats, Register, \
     CheckRates, VerifyEmail, ProxiedImage
 from cccatalog.api.views.link_views import CreateShortenedLink, \
     ResolveShortenedLink
+from cccatalog.api.views.license_views import LicenseView
 from cccatalog.settings import API_VERSION, WATERMARK_ENABLED
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -152,5 +153,6 @@ urlpatterns = [
         schema_view.with_ui('redoc', cache_timeout=15),
         name='schema-redoc'
     ),
+    path('license/',LicenseView.as_view()),
     path('v1/', include(versioned_paths))
 ]
