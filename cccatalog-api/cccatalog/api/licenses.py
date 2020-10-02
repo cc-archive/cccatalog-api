@@ -38,6 +38,7 @@ def get_license_url(_license, version, meta_data=None):
     else:
         return f'https://creativecommons.org/licenses/{_license}/{version}/'
 
+
 def parse_rdf_cache_license(rdf_path):
     g = rdflib.Graph()
     result = g.parse(rdf_path)
@@ -62,4 +63,3 @@ def parse_rdf_cache_license(rdf_path):
         })
     if 'licenses' not in cache:
         cache.set('licenses', licenses)
-        

@@ -13,9 +13,8 @@ class LicenseView(APIView):
     @swagger_auto_schema(operation_id='licenses',
                          query_serializer=LicenseSerializer,
                          responses={
-                            200: LicenseSerializer(many=True),
+                             200: LicenseSerializer(many=True),
                          })
-
     def get(self, request):
         parse_rdf_cache_license(
             "https://creativecommons.org/licenses/index.rdf")

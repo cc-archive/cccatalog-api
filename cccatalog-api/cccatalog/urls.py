@@ -153,6 +153,6 @@ urlpatterns = [
         schema_view.with_ui('redoc', cache_timeout=15),
         name='schema-redoc'
     ),
-    path('license/',LicenseView.as_view()),
+    path('license/', LicenseView.as_view()),
     path('v1/', include(versioned_paths))
 ]
