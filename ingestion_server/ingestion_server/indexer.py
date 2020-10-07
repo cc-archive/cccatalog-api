@@ -421,6 +421,8 @@ class TableIndexer:
         else:
             self._index_table(model_name, dest_idx=destination_index)
             self.go_live(destination_index, model_name)
+        if not consistency_check(destination_index, model_name):
+            self.es.indices.delete(index=destination_index)
 
     def update(self, model_name: str, since_date):
         log.info(
