@@ -147,7 +147,8 @@ versioned_paths = [
     path('link', CreateShortenedLink.as_view(), name='make-link'),
     path('link/<str:path>', ResolveShortenedLink.as_view(), name='resolve'),
     path('thumbs/<str:identifier>', ProxiedImage.as_view(), name='thumbs'),
-    path('oembed', OembedView.as_view(), name='oembed')
+    path('oembed', OembedView.as_view(), name='oembed'),
+    path('license/', LicenseView.as_view())
 ]
 if WATERMARK_ENABLED:
     versioned_paths.append(
@@ -172,6 +173,5 @@ urlpatterns = [
         schema_view.with_ui('redoc', cache_timeout=15),
         name='schema-redoc'
     ),
-    path('license/', LicenseView.as_view()),
     path('v1/', include(versioned_paths))
 ]
