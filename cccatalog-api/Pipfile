@@ -39,9 +39,5 @@ gevent = "*"
 django-storages = "*"
 boto3 = "*"
 rdflib = "*"
-
-[packages.future]
-version = "*"
-
-[packages.ipaddress]
-version = "*"
+future = {version = "*"}
+ipaddress = {version = "*"}
