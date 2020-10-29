@@ -186,4 +186,4 @@ Pull requests are welcome! Feel free to [join us on Slack](https://slack-signup.
 
 You are welcome to take any open issue in the tracker labeled 'help wanted' or 'good first issue'; **there's no need to ask for permission in advance**. Other issues are open for contribution as well, but may be less accessible or well defined in comparison to those that are explicitly labeled.
 
-See the [CONTRIBUTORS](https://github.com/creativecommons/cccatalog-api/blob/master/CONTRIBUTING.md) file for details.
+See the [CONTRIBUTING](https://github.com/creativecommons/cccatalog-api/blob/master/CONTRIBUTING.md) file for details.
