@@ -38,12 +38,10 @@ git clone https://github.com/creativecommons/cccatalog-api.git
 cd cccatalog-api
 ```
 5. Start CC Catalog API locally
-> Note: Make sure the [Docker Daemon](https://docs.docker.com/config/daemon/) is running before executing this command
 ```
 docker-compose up
 ```
 6. Wait until your CMD or terminal displays that it is starting development server at `http://0.0.0.0:8000/`
-> Note: This step is also known as initialization
 <br/>
 
 ![Initialization](https://raw.githubusercontent.com/creativecommons/cccatalog-api/ariessa-patch-1/initialization.PNG)
@@ -51,6 +49,9 @@ docker-compose up
 7. Open up your browser and type `localhost:8000` in the search tab
  
 8. Make sure you see the local API documentation
+<br/>
+
+![Local API Documentation](https://raw.githubusercontent.com/creativecommons/cccatalog-api/ariessa-patch-1/local_api_documentation.PNG)
  
 9. Open a new CMD or terminal and change directory to CC Catalog API
 
